@@ -1,5 +1,53 @@
-import React, { useEffect, useState } from 'react';
+import React, { JSX, useEffect, useState } from 'react';
 import { Message } from '../types/chat';
+import {
+  Bed,
+  Bath,
+  Wifi,
+  Snowflake,
+  Car,
+  Tv,
+  Coffee,
+  Utensils,
+  ShieldCheck,
+  Sparkles,
+  Anchor, // For ocean view or seaside related
+  Sun, // For beachfront related
+  MapPin, // For location related
+  Heart, // For pet-friendly properties
+  Shield, // For Security System
+  Umbrella, // For Patio or outdoor features
+  Bolt, // For electricity or power-related amenities
+  Leaf, // For garden or eco-friendly properties
+  Monitor, // For SmartTV or technology-related properties
+} from 'lucide-react';
+
+// Helper mapping of amenities to icons
+const amenityIcons: { [key: string]: JSX.Element } = {
+  Wifi: <Wifi className="w-4 h-4" />,
+  AC: <Snowflake className="w-4 h-4" />,
+  Parking: <Car className="w-4 h-4" />,
+  TV: <Tv className="w-4 h-4" />,
+  Breakfast: <Coffee className="w-4 h-4" />,
+  Kitchen: <Utensils className="w-4 h-4" />,
+  Security: <ShieldCheck className="w-4 h-4" />,
+  Clean: <Sparkles className="w-4 h-4" />,
+  Gym: <Bed className="w-4 h-4" />, // Using 'Bed' for Gym-related (alternatively could use a dumbbell if available)
+  OceanView: <Anchor className="w-4 h-4" />,
+  Beachfront: <Sun className="w-4 h-4" />,
+  Location: <MapPin className="w-4 h-4" />,
+  PetFriendly: <Heart className="w-4 h-4" />,
+  SecuritySystem: <Shield className="w-4 h-4" />,
+  Patio: <Umbrella className="w-4 h-4" />,
+  Electricity: <Bolt className="w-4 h-4" />,
+  Garden: <Leaf className="w-4 h-4" />,
+  SmartTV: <Monitor className="w-4 h-4" />,
+};
+
+
+
+
+
 
 const initialSuggestions = [
   'Search for properties in Lima',
@@ -114,6 +162,34 @@ const ChatBox: React.FC = () => {
       setIsTyping(false);
     }, delay);
   };
+
+
+  const PropertyCard: React.FC<{ property: any }> = ({ property }) => (
+    <div className="bg-white border border-gray-200 shadow-md rounded-2xl p-4 space-y-2 hover:shadow-lg transition duration-300">
+      <img
+        src={property.thumbnail}
+        alt={property.name}
+        className="rounded-xl w-full h-48 object-cover mb-2"
+      />
+      <h3 className="text-lg font-semibold mb-1">{property.name}</h3>
+  
+      <p className="text-sm text-gray-600">{property.location}</p>
+      <p className="text-lg font-bold text-emerald-600">${property.pricePerMonth} / Month</p>
+      <p className="text-sm mt-1">
+        🛏 {property.rooms} rooms &nbsp; 🚿 {property.bathrooms} baths
+      </p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {property.amenities.map((a: string, index: number) => (
+          <span key={index} className="flex items-center bg-gray-200 text-xs px-2 py-1 rounded-full">
+            {/* Render the icon if it exists for the amenity */}
+            {amenityIcons[a] && <span className="mr-1">{amenityIcons[a]}</span>}
+            {a}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+  
   
 
   const handleDistrictSelection = (districtName: string) => {
@@ -194,6 +270,60 @@ const ChatBox: React.FC = () => {
       addAssistantMessageOnly(
        `Thanks! Here's what I found based on your criteria:\n\n📍 Location: ${bookingDetails.city}, ${bookingDetails.district}\n📅 Dates: ${bookingDetails.dates}\n💵 Price Range: ${messageText}\n\n(We'll show search results here soon!)`
      );
+     // Simulated fetch or replace with actual fetch
+     setSearchResults([
+      {
+        id: 1,
+        name: 'Cozy Apartment in Miraflores',
+        thumbnail: '/images/property1.jpg',
+        bathrooms: 2,
+        rooms: 3,
+        location: 'Miraflores, Lima',
+        pricePerMonth: 450,
+        amenities: ['WiFi', 'Kitchen', 'Washer'],
+      },
+      {
+        id: 2,
+        name: 'Modern Loft in Barranco',
+        thumbnail: '/images/property2.jpg',
+        bathrooms: 1,
+        rooms: 2,
+        location: 'Barranco, Lima',
+        pricePerMonth: 480,
+        amenities: ['Balcony', 'Pet Friendly', 'Air Conditioning'],
+      },
+      {
+        id: 3,
+        name: 'Chic Studio in San Isidro',
+        thumbnail: '/images/property3.jpg',
+        bathrooms: 1,
+        rooms: 1,
+        location: 'San Isidro, Lima',
+        pricePerMonth: 520,
+        amenities: ['Gym', 'WiFi', 'Security'],
+      },
+      {
+        id: 4,
+        name: 'Spacious House in Surco',
+        thumbnail: '/images/property4.jpg',
+        bathrooms: 3,
+        rooms: 5,
+        location: 'Santiago de Surco, Lima',
+        pricePerMonth: 980,
+        amenities: ['Garden', 'Garage', 'Fireplace'],
+      },
+      {
+        id: 5,
+        name: 'Luxury Condo in La Molina',
+        thumbnail: '/images/property5.jpg',
+        bathrooms: 2,
+        rooms: 4,
+        location: 'La Molina, Lima',
+        pricePerMonth: 1250,
+        amenities: ['Pool', 'Doorman', 'Washer', 'Dryer'],
+      },
+    ]);
+    
       return;
     }
 
@@ -343,6 +473,17 @@ const ChatBox: React.FC = () => {
                 </button>
               </div>
             )}
+
+{chatStep === 'done' && searchResults.length > 0 && (
+  <div className="mt-6">
+    <h2 className="text-xl font-bold mb-4">Matching Properties</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
+      {searchResults.map((property) => (
+        <PropertyCard key={property.id} property={property} />
+      ))}
+    </div>
+  </div>
+)}
 
             {awaitingDateConfirmation && !isTyping  &&  (
               <div className="flex gap-2 mt-2">
