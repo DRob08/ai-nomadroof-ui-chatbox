@@ -6,11 +6,12 @@ const Header = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         
         {/* Left: Logo */}
-        <div className="flex items-center space-x-2">
-          {/* Replace this with an actual logo image if you have one */}
-          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-            N
-          </div>
+        <div className="flex items-center space-x-3">
+          <img
+            src="/logo.png" // or "logo.svg" etc.
+            alt="Nomadroof Logo"
+            className="h-16 w-auto object-contain"
+          />
           <span className="text-xl font-semibold text-gray-800">Nomadroof</span>
         </div>
 

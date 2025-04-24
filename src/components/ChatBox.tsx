@@ -45,10 +45,6 @@ const amenityIcons: { [key: string]: JSX.Element } = {
 };
 
 
-
-
-
-
 const initialSuggestions = [
   'Search for properties in Lima',
   'Print receipt for my booking',
