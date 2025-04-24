@@ -28,6 +28,9 @@ const ChatBox: React.FC = () => {
     dates: '',
     priceRange: '',
   });
+  const [isTyping, setIsTyping] = useState(false);
+
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const [awaitingDateConfirmation, setAwaitingDateConfirmation] = useState<null | {
     range: 'spring' | 'fall';
@@ -59,19 +62,23 @@ const ChatBox: React.FC = () => {
 
     if (isPast) {
       setAwaitingDateConfirmation({ range, proposedDateRange: dateRange });
-      setMessages(prev => [
+     /*  setMessages(prev => [
         ...prev,
         {
           role: 'assistant',
           content: `It looks like the ${range === 'spring' ? 'March to July' : 'August to December'} semester is in the past for this year. Did you mean to plan for ${year}?`,
         },
-      ]);
+      ]); */
+      addAssistantMessageOnly(
+        `It looks like the ${range === 'spring' ? 'March to July' : 'August to December'} semester is in the past for this year. Did you mean to plan for ${year}?`
+      );
+      
       return;
     }
 
     setBookingDetails(prev => ({ ...prev, dates: dateRange }));
     setChatStep('price');
-    setMessages(prev => [
+   /*  setMessages(prev => [
       ...prev,
       {
         role: 'user',
@@ -81,8 +88,33 @@ const ChatBox: React.FC = () => {
         role: 'assistant',
         content: 'Got it! What is your preferred price range? (e.g. $50–$100)',
       },
-    ]);
+    ]); */
+    addAssistantMessage(
+      range === 'spring' ? 'March to July' : 'August to December' ,
+     `Got it! What is your preferred price range? (e.g. $50–$100)`
+   );
   };
+
+  const addAssistantMessage = (userSelection: string, assistantMessage: string, delay = 1000) => {
+    setIsTyping(true);
+    setTimeout(() => {
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', content: userSelection },
+        { role: 'assistant', content: assistantMessage },
+      ]);
+      setIsTyping(false);
+    }, delay);
+  };
+
+  const addAssistantMessageOnly = (content: string, delay = 1000) => {
+    setIsTyping(true);
+    setTimeout(() => {
+      setMessages(prev => [...prev, { role: 'assistant', content }]);
+      setIsTyping(false);
+    }, delay);
+  };
+  
 
   const handleDistrictSelection = (districtName: string) => {
     const district = districtOptions.find((d) => d.name === districtName);
@@ -95,14 +127,18 @@ const ChatBox: React.FC = () => {
     }));
     setChatStep('date');
 
-    setMessages(prev => [
+   /*  setMessages(prev => [
       ...prev,
       { role: 'user', content: district.name },
       {
         role: 'assistant',
         content: `Perfect! Let’s move on. Please select your desired date range:`,
       },
-    ]);
+    ]); */
+    addAssistantMessage(
+       district.name ,
+      `Perfect! Let’s move on. Please select your desired date range:`
+    );
   };
 
   const sendMessage = async (content?: string) => {
@@ -122,23 +158,25 @@ const ChatBox: React.FC = () => {
         }));
         setAwaitingDateConfirmation(null);
         setChatStep('price');
-        setMessages(prev => [
+       /*  setMessages(prev => [
           ...prev,
           {
             role: 'assistant',
             content: 'Thanks for confirming! What is your preferred price range? (e.g. $50–$100)',
           },
-        ]);
+        ]); */
+        addAssistantMessageOnly('Thanks for confirming! What is your preferred price range? (e.g. $50–$100)');
         return;
       } else {
         setAwaitingDateConfirmation(null);
-        setMessages(prev => [
+        /* setMessages(prev => [
           ...prev,
           {
             role: 'assistant',
             content: 'No problem. Please select a different date range:',
           },
-        ]);
+        ]); */
+        addAssistantMessageOnly('No problem. Please select a different date range:');
         return;
       }
     }
@@ -146,15 +184,20 @@ const ChatBox: React.FC = () => {
     if (chatStep === 'price') {
       setBookingDetails(prev => ({ ...prev, priceRange: messageText }));
       setChatStep('done');
-      setMessages(prev => [
+     /* setMessages(prev => [
         ...prev,
         {
           role: 'assistant',
           content: `Thanks! Here's what I found based on your criteria:\n\n📍 Location: ${bookingDetails.city}, ${bookingDetails.district}\n📅 Dates: ${bookingDetails.dates}\n💵 Price Range: ${messageText}\n\n(We'll show search results here soon!)`,
         },
-      ]);
+      ]);*/
+      addAssistantMessageOnly(
+       `Thanks! Here's what I found based on your criteria:\n\n📍 Location: ${bookingDetails.city}, ${bookingDetails.district}\n📅 Dates: ${bookingDetails.dates}\n💵 Price Range: ${messageText}\n\n(We'll show search results here soon!)`
+     );
       return;
     }
+
+    
 
     if (messageText.toLowerCase().includes('properties in lima')) {
       setBookingDetails({
@@ -165,13 +208,16 @@ const ChatBox: React.FC = () => {
         priceRange: '',
       });
       setChatStep('district');
-      setMessages(prev => [
+     /*  setMessages(prev => [
         ...prev,
         {
           role: 'assistant',
           content: 'Which district in Lima are you most interested in?',
         },
-      ]);
+      ]); */
+      addAssistantMessageOnly(
+        `Which district in Lima are you most interested in?`
+      );
       return;
     }
 
@@ -209,7 +255,8 @@ const ChatBox: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen p-4">
-      <div className="flex-1 overflow-y-auto space-y-4">
+      <div className="flex-1 overflow-y-auto space-y-4 pr-4 scrollbar-thin scrollbar-thumb-gray-400">
+
         
           <>
           {messages.map((msg, i) => (
@@ -248,22 +295,39 @@ const ChatBox: React.FC = () => {
   </div>
 )}
 
+{isTyping && (
+  <div className="flex items-start space-x-2">
+    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200">
+      🤖
+    </div>
+    <div className="max-w-xs rounded-lg px-4 py-2 text-sm bg-gray-100 text-gray-800">
+      <div className="flex space-x-1">
+        <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+        <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+        <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+      </div>
+    </div>
+  </div>
+)}
 
-            {chatStep === 'district' && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {districtOptions.map((d, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleDistrictSelection(d.name)}
-                    className="bg-purple-100 hover:bg-purple-200 text-sm text-purple-800 px-4 py-2 rounded-lg border border-purple-400"
-                  >
-                    {d.name}
-                  </button>
-                ))}
-              </div>
-            )}
 
-            {chatStep === 'date' && !awaitingDateConfirmation && (
+
+{chatStep === 'district' && !isTyping && (
+  <div className="flex flex-wrap gap-2 mt-2">
+    {districtOptions.map((d, i) => (
+      <button
+        key={i}
+        onClick={() => handleDistrictSelection(d.name)}
+        className="bg-purple-100 hover:bg-purple-200 text-sm text-purple-800 px-4 py-2 rounded-lg border border-purple-400"
+      >
+        {d.name}
+      </button>
+    ))}
+  </div>
+)}
+
+
+            {chatStep === 'date' && !awaitingDateConfirmation && !isTyping && (
               <div className="flex flex-wrap gap-2 mt-4">
                 <button
                   onClick={() => handleDateSelection('spring')}
@@ -280,7 +344,7 @@ const ChatBox: React.FC = () => {
               </div>
             )}
 
-            {awaitingDateConfirmation && (
+            {awaitingDateConfirmation && !isTyping  &&  (
               <div className="flex gap-2 mt-2">
                 <button
                   onClick={() => handleQuickResponse('yes')}
