@@ -21,6 +21,8 @@ import {
   Leaf, // For garden or eco-friendly properties
   Monitor, // For SmartTV or technology-related properties
 } from 'lucide-react';
+import { getProperties } from '../services/propertyService';
+import { PropertyModel } from '../types/property';
 
 // Helper mapping of amenities to icons
 const amenityIcons: { [key: string]: JSX.Element } = {
@@ -72,6 +74,10 @@ const ChatBox: React.FC = () => {
     dates: '',
     priceRange: '',
   });
+
+  const [properties, setProperties] = useState<PropertyModel[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
   const [isTyping, setIsTyping] = useState(false);
 
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -160,31 +166,72 @@ const ChatBox: React.FC = () => {
   };
 
 
-  const PropertyCard: React.FC<{ property: any }> = ({ property }) => (
-    <div className="bg-white border border-gray-200 shadow-md rounded-2xl p-4 space-y-2 hover:shadow-lg transition duration-300">
-      <img
-        src={property.thumbnail}
-        alt={property.name}
-        className="rounded-xl w-full h-48 object-cover mb-2"
-      />
-      <h3 className="text-lg font-semibold mb-1">{property.name}</h3>
+  const PropertyCard: React.FC<{ property: any }> = ({ property }) => {
+    const {
+      post_title,
+      full_thumbnail_url,
+      property_price_per_month,
+      property_rooms,
+      property_bedrooms,
+      property_bathrooms,
+      property_address,
+      property_state,
+      property_country,
+      electricity_included,
+      pool,
+      water_included,
+      gym,
+      heating,
+      hot_tub,
+      air_conditioning,
+      free_parking_on_premises,
+      desk,
+      hangers,
+      closet,
+      iron,
+    } = property;
   
-      <p className="text-sm text-gray-600">{property.location}</p>
-      <p className="text-lg font-bold text-emerald-600">${property.pricePerMonth} / Month</p>
-      <p className="text-sm mt-1">
-        🛏 {property.rooms} rooms &nbsp; 🚿 {property.bathrooms} baths
-      </p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {property.amenities.map((a: string, index: number) => (
-          <span key={index} className="flex items-center bg-gray-200 text-xs px-2 py-1 rounded-full">
-            {/* Render the icon if it exists for the amenity */}
-            {amenityIcons[a] && <span className="mr-1">{amenityIcons[a]}</span>}
-            {a}
-          </span>
-        ))}
+    const location = [property_address, property_state, property_country].filter(Boolean).join(', ');
+  
+    const amenities: string[] = [];
+    if (electricity_included) amenities.push('Electricity');
+    if (pool) amenities.push('Pool');
+    if (water_included) amenities.push('Water');
+    if (gym) amenities.push('Gym');
+    if (heating) amenities.push('Heating');
+    if (hot_tub) amenities.push('Hot Tub');
+    if (air_conditioning) amenities.push('Air Conditioning');
+    if (free_parking_on_premises) amenities.push('Free Parking');
+    if (desk) amenities.push('Desk');
+    if (hangers) amenities.push('Hangers');
+    if (closet) amenities.push('Closet');
+    if (iron) amenities.push('Iron');
+  
+    return (
+      <div className="bg-white border border-gray-200 shadow-md rounded-2xl p-4 space-y-2 hover:shadow-lg transition duration-300">
+        <img
+          src={full_thumbnail_url || '/default-thumbnail.jpg'}
+          alt={post_title}
+          className="rounded-xl w-full h-48 object-cover mb-2"
+        />
+        <h3 className="text-lg font-semibold mb-1">{post_title}</h3>
+  
+        <p className="text-sm text-gray-600">{location}</p>
+        <p className="text-lg font-bold text-emerald-600">${property_price_per_month} / Month</p>
+        <p className="text-sm mt-1">
+          🛏 {property_bedrooms || 'N/A'} rooms &nbsp; 🚿 {property_bathrooms || 'N/A'} baths
+        </p>
+  
+        <div className="mt-2 flex flex-wrap gap-2">
+          {amenities.map((a: string, index: number) => (
+            <span key={index} className="flex items-center bg-gray-200 text-xs px-2 py-1 rounded-full">
+              {a}
+            </span>
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
   
   
 
@@ -256,72 +303,28 @@ const ChatBox: React.FC = () => {
     if (chatStep === 'price') {
       setBookingDetails(prev => ({ ...prev, priceRange: messageText }));
       setChatStep('done');
-     /* setMessages(prev => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: `Thanks! Here's what I found based on your criteria:\n\n📍 Location: ${bookingDetails.city}, ${bookingDetails.district}\n📅 Dates: ${bookingDetails.dates}\n💵 Price Range: ${messageText}\n\n(We'll show search results here soon!)`,
-        },
-      ]);*/
-      addAssistantMessageOnly(
-       `Thanks! Here's what I found based on your criteria:\n\n📍 Location: ${bookingDetails.city}, ${bookingDetails.district}\n📅 Dates: ${bookingDetails.dates}\n💵 Price Range: ${messageText}\n\n(We'll show search results here soon!)`
-     );
-     // Simulated fetch or replace with actual fetch
-     setSearchResults([
-      {
-        id: 1,
-        name: 'Cozy Apartment in Miraflores',
-        thumbnail: '/images/property1.jpg',
-        bathrooms: 2,
-        rooms: 3,
-        location: 'Miraflores, Lima',
-        pricePerMonth: 450,
-        amenities: ['WiFi', 'Kitchen', 'Washer'],
-      },
-      {
-        id: 2,
-        name: 'Modern Loft in Barranco',
-        thumbnail: '/images/property2.jpg',
-        bathrooms: 1,
-        rooms: 2,
-        location: 'Barranco, Lima',
-        pricePerMonth: 480,
-        amenities: ['Balcony', 'Pet Friendly', 'Air Conditioning'],
-      },
-      {
-        id: 3,
-        name: 'Chic Studio in San Isidro',
-        thumbnail: '/images/property3.jpg',
-        bathrooms: 1,
-        rooms: 1,
-        location: 'San Isidro, Lima',
-        pricePerMonth: 520,
-        amenities: ['Gym', 'WiFi', 'Security'],
-      },
-      {
-        id: 4,
-        name: 'Spacious House in Surco',
-        thumbnail: '/images/property4.jpg',
-        bathrooms: 3,
-        rooms: 5,
-        location: 'Santiago de Surco, Lima',
-        pricePerMonth: 980,
-        amenities: ['Garden', 'Garage', 'Fireplace'],
-      },
-      {
-        id: 5,
-        name: 'Luxury Condo in La Molina',
-        thumbnail: '/images/property5.jpg',
-        bathrooms: 2,
-        rooms: 4,
-        location: 'La Molina, Lima',
-        pricePerMonth: 1250,
-        amenities: ['Pool', 'Doorman', 'Washer', 'Dryer'],
-      },
-    ]);
     
+      addAssistantMessageOnly(
+        `Thanks! Here's what I found based on your criteria:\n\n📍 Location: ${bookingDetails.city}, ${bookingDetails.district}\n📅 Dates: ${bookingDetails.dates}\n💵 Price Range: ${messageText}\n\n(Showing search results...)`
+      );
+    
+      const fetchProperties = async () => {
+        try {
+          setLoading(true);
+          const results = await getProperties(); // no filters yet
+          setProperties(results); // or setSearchResults if you want to keep them separate
+        } catch (err) {
+          console.error("Error fetching properties", err);
+          addAssistantMessageOnly("Oops! There was a problem fetching the properties.");
+        } finally {
+          setLoading(false);
+        }
+      };
+    
+      fetchProperties();
       return;
     }
+    
 
     
 
@@ -378,6 +381,22 @@ const ChatBox: React.FC = () => {
       ]);
     }
   }, []);
+
+  /* useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        const data = await getProperties();
+        console.log("Fetched properties:", data); 
+        setProperties(data);
+      } catch (error) {
+        console.error("Error fetching properties:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperties();
+  }, []); */
 
   return (
     <div className="flex flex-col h-screen p-4">
@@ -470,7 +489,7 @@ const ChatBox: React.FC = () => {
               </div>
             )}
 
-{chatStep === 'done' && searchResults.length > 0 && (
+{/* {chatStep === 'done' && searchResults.length > 0 && (
   <div className="mt-6">
     <h2 className="text-xl font-bold mb-4">Matching Properties</h2>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
@@ -479,7 +498,19 @@ const ChatBox: React.FC = () => {
       ))}
     </div>
   </div>
+)} */}
+
+{chatStep === 'done' && properties.length > 0 && (
+  <div className="mt-6">
+    <h2 className="text-xl font-bold mb-4">Matching Properties</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
+      {properties.map((property, index) => (
+        <PropertyCard key={property.half_property_url || index} property={property} />
+      ))}
+    </div>
+  </div>
 )}
+
 
             {awaitingDateConfirmation && !isTyping  &&  (
               <div className="flex gap-2 mt-2">
