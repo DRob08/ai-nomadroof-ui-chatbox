@@ -22,6 +22,7 @@ import {
   Monitor, // For SmartTV or technology-related properties
 } from 'lucide-react';
 import { getProperties } from '../services/propertyService';
+import { getPropertyInsights } from '../services/aiService';
 import { PropertyModel } from '../types/property';
 
 // Helper mapping of amenities to icons
@@ -51,6 +52,12 @@ const initialSuggestions = [
   'Search for properties in Lima',
   'Print receipt for my booking',
   'Show me exclusive Properties only',
+];
+
+const suggestedQuestions = [
+  "Which area has the most listings?",
+  "What is the average price of properties?",
+  "Which listings have pools or gyms?",
 ];
 
 type ChatStep = null | 'district' | 'date' | 'confirmDates' | 'price' | 'done';
@@ -144,6 +151,30 @@ const ChatBox: React.FC = () => {
      `Got it! What is your preferred price range? (e.g. $50–$100)`
    );
   };
+
+
+  const handleSuggestedQuestion = async (question: string) => {
+    try {
+      setIsTyping(true);
+      setMessages((prev) => [...prev, { role: 'user', content: question }]);
+  
+      const insightResponse = await getPropertyInsights(question, properties);
+      console.log(insightResponse.answer );
+      
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: insightResponse.answer || 'No insight available.' },
+      ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'Something went wrong fetching insights.' },
+      ]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+  
 
   const addAssistantMessage = (userSelection: string, assistantMessage: string, delay = 1000) => {
     setIsTyping(true);
@@ -501,15 +532,33 @@ const ChatBox: React.FC = () => {
 )} */}
 
 {chatStep === 'done' && properties.length > 0 && (
-  <div className="mt-6">
-    <h2 className="text-xl font-bold mb-4">Matching Properties</h2>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
-      {properties.map((property, index) => (
-        <PropertyCard key={property.half_property_url || index} property={property} />
-      ))}
+  <>
+    <div className="mt-6">
+      <h2 className="text-xl font-bold mb-4">Matching Properties</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
+        {properties.map((property, index) => (
+          <PropertyCard key={property.half_property_url || index} property={property} />
+        ))}
+      </div>
     </div>
-  </div>
+
+    <div className="mt-6">
+      <h2 className="text-md font-semibold mb-2">Quick Insights</h2>
+      <div className="flex flex-wrap gap-2">
+        {suggestedQuestions.map((q, i) => (
+          <button
+            key={i}
+            onClick={() => handleSuggestedQuestion(q)}
+            className="bg-[#f5694b]/10 hover:bg-[#f5694b]/20 text-sm text-[#f5694b] px-4 py-2 rounded-lg border border-[#f5694b]"
+          >
+            {q}
+          </button>
+        ))}
+      </div>
+    </div>
+  </>
 )}
+
 
 
             {awaitingDateConfirmation && !isTyping  &&  (
