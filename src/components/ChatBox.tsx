@@ -60,7 +60,7 @@ const suggestedQuestions = [
   "Which listings have pools or gyms?",
 ];
 
-type ChatStep = null | 'district' | 'date' | 'confirmDates' | 'price' | 'done';
+type ChatStep = null | 'district' | 'date' | 'confirmDates' | 'price' | 'done' | 'propertyInsights';
 
 const districtOptions = [
   { name: 'Miraflores', lat: -12.1211, lng: -77.0297 },
@@ -82,11 +82,10 @@ const ChatBox: React.FC = () => {
     priceRange: '',
   });
 
+  const [latestInsight, setLatestInsight] = useState<string | null>(null);
   const [properties, setProperties] = useState<PropertyModel[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-
   const [isTyping, setIsTyping] = useState(false);
-
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const [awaitingDateConfirmation, setAwaitingDateConfirmation] = useState<null | {
@@ -152,30 +151,18 @@ const ChatBox: React.FC = () => {
    );
   };
 
-
   const handleSuggestedQuestion = async (question: string) => {
-    try {
-      setIsTyping(true);
-      setMessages((prev) => [...prev, { role: 'user', content: question }]);
+    setChatStep('propertyInsights');
   
+    try {
       const insightResponse = await getPropertyInsights(question, properties);
-      console.log(insightResponse.answer );
-      
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: insightResponse.answer || 'No insight available.' },
-      ]);
+      console.log(insightResponse.answer)
+      addAssistantMessage(question, insightResponse.answer || 'No insight available.');
     } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: 'Something went wrong fetching insights.' },
-      ]);
-    } finally {
-      setIsTyping(false);
+      addAssistantMessage(question, 'Something went wrong fetching insights.');
     }
   };
   
-
   const addAssistantMessage = (userSelection: string, assistantMessage: string, delay = 1000) => {
     setIsTyping(true);
     setTimeout(() => {
@@ -195,7 +182,6 @@ const ChatBox: React.FC = () => {
       setIsTyping(false);
     }, delay);
   };
-
 
   const PropertyCard: React.FC<{ property: any }> = ({ property }) => {
     const {
@@ -264,8 +250,6 @@ const ChatBox: React.FC = () => {
     );
   };
   
-  
-
   const handleDistrictSelection = (districtName: string) => {
     const district = districtOptions.find((d) => d.name === districtName);
     if (!district) return;
@@ -308,24 +292,12 @@ const ChatBox: React.FC = () => {
         }));
         setAwaitingDateConfirmation(null);
         setChatStep('price');
-       /*  setMessages(prev => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: 'Thanks for confirming! What is your preferred price range? (e.g. $50–$100)',
-          },
-        ]); */
+      
         addAssistantMessageOnly('Thanks for confirming! What is your preferred price range? (e.g. $50–$100)');
         return;
       } else {
         setAwaitingDateConfirmation(null);
-        /* setMessages(prev => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: 'No problem. Please select a different date range:',
-          },
-        ]); */
+       
         addAssistantMessageOnly('No problem. Please select a different date range:');
         return;
       }
@@ -356,9 +328,6 @@ const ChatBox: React.FC = () => {
       return;
     }
     
-
-    
-
     if (messageText.toLowerCase().includes('properties in lima')) {
       setBookingDetails({
         city: 'Lima',
@@ -368,13 +337,6 @@ const ChatBox: React.FC = () => {
         priceRange: '',
       });
       setChatStep('district');
-     /*  setMessages(prev => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: 'Which district in Lima are you most interested in?',
-        },
-      ]); */
       addAssistantMessageOnly(
         `Which district in Lima are you most interested in?`
       );
@@ -413,95 +375,74 @@ const ChatBox: React.FC = () => {
     }
   }, []);
 
-  /* useEffect(() => {
-    const fetchProperties = async () => {
-      try {
-        const data = await getProperties();
-        console.log("Fetched properties:", data); 
-        setProperties(data);
-      } catch (error) {
-        console.error("Error fetching properties:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProperties();
-  }, []); */
-
   return (
     <div className="flex flex-col h-screen p-4">
       <div className="flex-1 overflow-y-auto space-y-4 pr-4 scrollbar-thin scrollbar-thumb-gray-400">
-
-        
           <>
           {messages.map((msg, i) => (
-  <div
-    key={i}
-    className={`flex items-start space-x-2 ${
-      msg.role === 'assistant' ? '' : 'flex-row-reverse'
-    }`}
-  >
-    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200">
-      {msg.role === 'assistant' ? '🤖' : '🧑'}
-    </div>
-    <div
-      className={`max-w-xs rounded-lg px-4 py-2 text-sm whitespace-pre-line ${
-        msg.role === 'assistant'
-          ? 'bg-gray-100 text-gray-800'
-          : 'bg-[#f5694b] text-white'
-      }`}
-    >
-      {msg.content}
-    </div>
-  </div>
-))}
+              <div
+                key={i}
+                className={`flex items-start space-x-2 ${
+                  msg.role === 'assistant' ? '' : 'flex-row-reverse'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200">
+                  {msg.role === 'assistant' ? '🤖' : '🧑'}
+                </div>
+                <div
+                  className={`max-w-xs rounded-lg px-4 py-2 text-sm whitespace-pre-line ${
+                    msg.role === 'assistant'
+                      ? 'bg-gray-100 text-gray-800'
+                      : 'bg-[#f5694b] text-white'
+                  }`}
+                >
+                  {msg.content}
+                </div>
+              </div>
+            ))}
 
-{messages.length === 1 && (
-  <div className="flex flex-wrap gap-2 mt-2">
-    {initialSuggestions.map((text, i) => (
-      <button
-        key={i}
-        onClick={() => sendMessage(text)}
-        className="bg-[#f5694b]/10 hover:bg-[#f5694b]/20 text-sm text-[#f5694b] px-4 py-2 rounded-lg border border-[#f5694b]"
-      >
-        {text}
-      </button>
-    ))}
-  </div>
-)}
+            {messages.length === 1 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {initialSuggestions.map((text, i) => (
+                  <button
+                    key={i}
+                    onClick={() => sendMessage(text)}
+                    className="bg-[#f5694b]/10 hover:bg-[#f5694b]/20 text-sm text-[#f5694b] px-4 py-2 rounded-lg border border-[#f5694b]"
+                  >
+                    {text}
+                  </button>
+                ))}
+              </div>
+            )}
 
-{isTyping && (
-  <div className="flex items-start space-x-2">
-    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200">
-      🤖
-    </div>
-    <div className="max-w-xs rounded-lg px-4 py-2 text-sm bg-gray-100 text-gray-800">
-      <div className="flex space-x-1">
-        <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-        <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-        <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-      </div>
-    </div>
-  </div>
-)}
+            {isTyping && (
+              <div className="flex items-start space-x-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200">
+                  🤖
+                </div>
+                <div className="max-w-xs rounded-lg px-4 py-2 text-sm bg-gray-100 text-gray-800">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+                  </div>
+                </div>
+              </div>
+            )}
 
-
-
-{chatStep === 'district' && !isTyping && (
-  <div className="flex flex-wrap gap-2 mt-2">
-    {districtOptions.map((d, i) => (
-      <button
-        key={i}
-        onClick={() => handleDistrictSelection(d.name)}
-        className="bg-purple-100 hover:bg-purple-200 text-sm text-purple-800 px-4 py-2 rounded-lg border border-purple-400"
-      >
-        {d.name}
-      </button>
-    ))}
-  </div>
-)}
-
+            {chatStep === 'district' && !isTyping && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {districtOptions.map((d, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleDistrictSelection(d.name)}
+                    className="bg-purple-100 hover:bg-purple-200 text-sm text-purple-800 px-4 py-2 rounded-lg border border-purple-400"
+                  >
+                    {d.name}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {chatStep === 'date' && !awaitingDateConfirmation && !isTyping && (
               <div className="flex flex-wrap gap-2 mt-4">
@@ -520,45 +461,33 @@ const ChatBox: React.FC = () => {
               </div>
             )}
 
-{/* {chatStep === 'done' && searchResults.length > 0 && (
-  <div className="mt-6">
-    <h2 className="text-xl font-bold mb-4">Matching Properties</h2>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
-      {searchResults.map((property) => (
-        <PropertyCard key={property.id} property={property} />
-      ))}
-    </div>
-  </div>
-)} */}
+          {chatStep === 'done' && properties.length > 0 && (
+            <>
+              <div className="mt-6">
+                <h2 className="text-xl font-bold mb-4">Matching Properties</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
+                  {properties.map((property, index) => (
+                    <PropertyCard key={property.half_property_url || index} property={property} />
+                  ))}
+                </div>
+              </div>
 
-{chatStep === 'done' && properties.length > 0 && (
-  <>
-    <div className="mt-6">
-      <h2 className="text-xl font-bold mb-4">Matching Properties</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
-        {properties.map((property, index) => (
-          <PropertyCard key={property.half_property_url || index} property={property} />
-        ))}
-      </div>
-    </div>
-
-    <div className="mt-6">
-      <h2 className="text-md font-semibold mb-2">Quick Insights</h2>
-      <div className="flex flex-wrap gap-2">
-        {suggestedQuestions.map((q, i) => (
-          <button
-            key={i}
-            onClick={() => handleSuggestedQuestion(q)}
-            className="bg-[#f5694b]/10 hover:bg-[#f5694b]/20 text-sm text-[#f5694b] px-4 py-2 rounded-lg border border-[#f5694b]"
-          >
-            {q}
-          </button>
-        ))}
-      </div>
-    </div>
-  </>
-)}
-
+              <div className="mt-6">
+                <h2 className="text-md font-semibold mb-2">Quick Insights</h2>
+                <div className="flex flex-wrap gap-2">
+                  {suggestedQuestions.map((q, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSuggestedQuestion(q)}
+                      className="bg-[#f5694b]/10 hover:bg-[#f5694b]/20 text-sm text-[#f5694b] px-4 py-2 rounded-lg border border-[#f5694b]"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
 
             {awaitingDateConfirmation && !isTyping  &&  (
