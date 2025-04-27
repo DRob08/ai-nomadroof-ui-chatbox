@@ -24,6 +24,11 @@ import {
 import { getProperties } from '../services/propertyService';
 import { getPropertyInsights } from '../services/aiService';
 import { PropertyModel } from '../types/property';
+import { Range, getTrackBackground } from 'react-range';
+
+const MIN = 0;
+const MAX = 1000;
+const STEP = 10;
 
 // Helper mapping of amenities to icons
 const amenityIcons: { [key: string]: JSX.Element } = {
@@ -79,8 +84,13 @@ const ChatBox: React.FC = () => {
     district: '',
     districtCoordinates: { lat: 0, lng: 0 },
     dates: '',
+    startDate: '',
+    endDate: '',
     priceRange: '',
+    minPrice: '',
+    maxPrice: '',
   });
+  const [pricesRange, setPriceRange] = useState<[number, number]>([100, 500]);
 
   const [latestInsight, setLatestInsight] = useState<string | null>(null);
   const [properties, setProperties] = useState<PropertyModel[]>([]);
@@ -116,8 +126,17 @@ const ChatBox: React.FC = () => {
     const year = isPast ? currentYear + 1 : currentYear;
     const dateRange = formatDateRange(startMonth, endMonth);
 
+    const start = new Date(year, startMonth - 1, 1);
+    const end = new Date(year, endMonth, 0);
+
+    const format = (d: Date) => d.toLocaleDateString('en-CA');
+
     if (isPast) {
-      setAwaitingDateConfirmation({ range, proposedDateRange: dateRange });
+      //setAwaitingDateConfirmation({ range, proposedDateRange: dateRange });
+      setAwaitingDateConfirmation({
+        range,
+        proposedDateRange: `${format(start)} to ${format(end)}`,
+      });
      /*  setMessages(prev => [
         ...prev,
         {
@@ -132,7 +151,13 @@ const ChatBox: React.FC = () => {
       return;
     }
 
-    setBookingDetails(prev => ({ ...prev, dates: dateRange }));
+    setBookingDetails(prev => ({
+      ...prev,
+      startDate: format(start),
+      endDate: format(end),
+      dates: dateRange,
+    }));
+    
     setChatStep('price');
    /*  setMessages(prev => [
       ...prev,
@@ -304,21 +329,32 @@ const ChatBox: React.FC = () => {
     }
 
     if (chatStep === 'price') {
-      setBookingDetails(prev => ({ ...prev, priceRange: messageText }));
+      const updatedBookingDetails = {
+        ...bookingDetails,
+        priceRange: messageText,
+      };
+      setBookingDetails(updatedBookingDetails);
       setChatStep('done');
     
       addAssistantMessageOnly(
-        `Thanks! Here's what I found based on your criteria:\n\n📍 Location: ${bookingDetails.city}, ${bookingDetails.district}\n📅 Dates: ${bookingDetails.dates}\n💵 Price Range: ${messageText}\n\n(Showing search results...)`
+        `Thanks! Here's what I found based on your criteria:\n\n📍 Location: ${updatedBookingDetails.city}, ${updatedBookingDetails.district}\n📅 Dates: ${updatedBookingDetails.dates}\n💵 Price Range: ${updatedBookingDetails.priceRange}\n\n(Showing search results...)`
       );
     
       const fetchProperties = async () => {
         try {
           setLoading(true);
-          const results = await getProperties(); // no filters yet
-          setProperties(results); // or setSearchResults if you want to keep them separate
-        } catch (err) {
-          console.error("Error fetching properties", err);
-          addAssistantMessageOnly("Oops! There was a problem fetching the properties.");
+          const response = await getProperties({
+            city: updatedBookingDetails.city,
+            district: updatedBookingDetails.district,
+            dates: updatedBookingDetails.dates,
+            startDate:updatedBookingDetails.startDate,
+            endDate:updatedBookingDetails.endDate,
+            priceRange: updatedBookingDetails.priceRange,
+            districtCoordinates : updatedBookingDetails.districtCoordinates,
+          });
+          setProperties(response);
+        } catch (error) {
+          console.error('Error fetching properties:', error);
         } finally {
           setLoading(false);
         }
@@ -328,13 +364,18 @@ const ChatBox: React.FC = () => {
       return;
     }
     
+    
     if (messageText.toLowerCase().includes('properties in lima')) {
       setBookingDetails({
         city: 'Lima',
         district: '',
         districtCoordinates: { lat: 0, lng: 0 },
         dates: '',
+        startDate: '',
+        endDate: '',
         priceRange: '',
+        minPrice:'',
+        maxPrice:'',
       });
       setChatStep('district');
       addAssistantMessageOnly(
@@ -365,6 +406,61 @@ const ChatBox: React.FC = () => {
 
   const handleQuickResponse = (response: 'yes' | 'no') => {
     sendMessage(response);
+  };
+
+  const handleStartPriceSelection = () => {
+    setChatStep('price');
+  };
+
+  const handleConfirmPrice = () => {
+    setBookingDetails(prev => ({
+      ...prev,
+      minPrice: pricesRange[0].toString(),
+      maxPrice: pricesRange[1].toString(),
+      priceRange: `${pricesRange[0]}-${pricesRange[1]}`
+    }));
+
+
+    const updatedBookingDetails = {
+      ...bookingDetails,
+      minPrice: pricesRange[0].toString(),
+      maxPrice: pricesRange[1].toString(),
+      priceRange: `${pricesRange[0]}-${pricesRange[1]}`,
+    };
+
+    setBookingDetails(updatedBookingDetails);
+    
+    setChatStep('done');
+
+    addAssistantMessageOnly(
+      `Thanks! Here's what I found based on your criteria:\n\n📍 Location: ${updatedBookingDetails.city}, ${updatedBookingDetails.district}\n📅 Dates: ${updatedBookingDetails.dates}\n💵 Price Range: ${updatedBookingDetails.priceRange}\n\n(Showing search results...)`
+    );
+  
+    const fetchProperties = async () => {
+      try {
+        setLoading(true);
+        const response = await getProperties({
+          city: updatedBookingDetails.city,
+          district: updatedBookingDetails.district,
+          dates: updatedBookingDetails.dates,
+          startDate:updatedBookingDetails.startDate,
+          endDate:updatedBookingDetails.endDate,
+          priceRange: updatedBookingDetails.priceRange,
+          districtCoordinates : updatedBookingDetails.districtCoordinates,
+          minPrice: updatedBookingDetails.minPrice,
+          maxPrice: updatedBookingDetails.maxPrice
+        });
+        setProperties(response);
+      } catch (error) {
+        console.error('Error fetching properties:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchProperties();
+
+
   };
 
   useEffect(() => {
@@ -461,6 +557,84 @@ const ChatBox: React.FC = () => {
               </div>
             )}
 
+          {chatStep === 'price' && !isTyping && (
+            <div className="flex flex-col items-center space-y-6 p-4 rounded-lg shadow-md bg-white max-w-md mx-auto">
+              <div className="flex flex-col items-center space-y-4 w-full">
+                <p className="text-lg font-semibold text-gray-700">
+                  Select Your Price Range
+                </p>
+
+                <p className="text-md text-gray-600">
+                  ${pricesRange[0]} - ${pricesRange[1]}
+                </p>
+
+                <div className="w-11/12">
+                  <Range
+                    values={pricesRange}
+                    step={STEP}
+                    min={MIN}
+                    max={MAX}
+                    onChange={(values) => setPriceRange(values as [number, number])}
+                    renderTrack={({ props, children }) => (
+                      <div
+                        {...props}
+                        style={{
+                          ...props.style,
+                          height: '8px',
+                          width: '100%',
+                          background: getTrackBackground({
+                            values: pricesRange,
+                            colors: ['#d1d5db', '#f5694b', '#d1d5db'], // use your color
+                            min: MIN,
+                            max: MAX,
+                          }),
+                          borderRadius: '6px',
+                        }}
+                        className="w-full"
+                      >
+                        {children}
+                      </div>
+                    )}
+                    renderThumb={({ props, index }) => (
+                      <div
+                        {...props}
+                        style={{
+                          ...props.style,
+                          height: '20px',
+                          width: '20px',
+                          backgroundColor: '#f5694b', // your color
+                          border: '2px solid white',
+                          borderRadius: '50%',
+                          boxShadow: '0 0 0 4px rgba(245, 105, 75, 0.4)', // soft glow of your color
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}
+                        className="focus:outline-none"
+                      >
+                        <div
+                          style={{
+                            height: '6px',
+                            width: '6px',
+                            backgroundColor: 'white',
+                            borderRadius: '50%',
+                          }}
+                        />
+                      </div>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={handleConfirmPrice}
+                className="mt-4 px-6 py-2 bg-[#f5694b] text-white text-sm font-semibold rounded-full hover:bg-[#e65a3d] transition"
+              >
+                Confirm Price
+              </button>
+            </div>
+          )}
+
           {chatStep === 'done' && properties.length > 0 && (
             <>
               <div className="mt-6">
@@ -488,6 +662,9 @@ const ChatBox: React.FC = () => {
               </div>
             </>
           )}
+
+
+          
 
 
             {awaitingDateConfirmation && !isTyping  &&  (
