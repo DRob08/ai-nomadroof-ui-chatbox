@@ -10,6 +10,9 @@ export interface PropertyModel {
     property_state?: string;
     property_county?: string;
     property_country?: string;
+    property_latitude?: string;
+    property_longitude?: string;
+    property_available_days?:string;
     guest_no?: string;
     property_price?: string;
     property_price_per_month?: string;

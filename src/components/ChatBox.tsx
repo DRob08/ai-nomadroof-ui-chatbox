@@ -25,6 +25,12 @@ import { getProperties } from '../services/propertyService';
 import { getPropertyInsights } from '../services/aiService';
 import { PropertyModel } from '../types/property';
 import { Range, getTrackBackground } from 'react-range';
+import PriceRangeSelector from './PriceRangeSelector'; // Import from the same folder
+import PropertyCard from './PropertyCard'; // Import from the same folder
+import MessageItem from './MessageItem';
+import TypingIndicator from './TypingIndicator';
+
+
 
 const MIN = 0;
 const MAX = 1000;
@@ -90,14 +96,14 @@ const ChatBox: React.FC = () => {
     minPrice: '',
     maxPrice: '',
   });
-  const [pricesRange, setPriceRange] = useState<[number, number]>([100, 500]);
+  const [pricesRange, setPriceRange] = useState<[number, number]>([400, 600]);
 
   const [latestInsight, setLatestInsight] = useState<string | null>(null);
   const [properties, setProperties] = useState<PropertyModel[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [isTyping, setIsTyping] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
-
+  const [showProperties, setShowProperties] = useState(false);
   const [awaitingDateConfirmation, setAwaitingDateConfirmation] = useState<null | {
     range: 'spring' | 'fall';
     proposedDateRange: string;
@@ -208,7 +214,7 @@ const ChatBox: React.FC = () => {
     }, delay);
   };
 
-  const PropertyCard: React.FC<{ property: any }> = ({ property }) => {
+/*   const PropertyCard: React.FC<{ property: any }> = ({ property }) => {
     const {
       post_title,
       full_thumbnail_url,
@@ -273,7 +279,7 @@ const ChatBox: React.FC = () => {
         </div>
       </div>
     );
-  };
+  }; */
   
   const handleDistrictSelection = (districtName: string) => {
     const district = districtOptions.find((d) => d.name === districtName);
@@ -428,6 +434,9 @@ const ChatBox: React.FC = () => {
       priceRange: `${pricesRange[0]}-${pricesRange[1]}`,
     };
 
+    const userMsg: Message = { role: 'user', content: `${pricesRange[0]}-${pricesRange[1]}` };
+    setMessages(prev => [...prev, userMsg]);
+
     setBookingDetails(updatedBookingDetails);
     
     setChatStep('done');
@@ -451,6 +460,7 @@ const ChatBox: React.FC = () => {
           maxPrice: updatedBookingDetails.maxPrice
         });
         setProperties(response);
+        setShowProperties(true);
       } catch (error) {
         console.error('Error fetching properties:', error);
       } finally {
@@ -459,8 +469,6 @@ const ChatBox: React.FC = () => {
     };
   
     fetchProperties();
-
-
   };
 
   useEffect(() => {
@@ -476,7 +484,7 @@ const ChatBox: React.FC = () => {
       <div className="flex-1 overflow-y-auto space-y-4 pr-4 scrollbar-thin scrollbar-thumb-gray-400">
           <>
           {messages.map((msg, i) => (
-              <div
+            /*   <div
                 key={i}
                 className={`flex items-start space-x-2 ${
                   msg.role === 'assistant' ? '' : 'flex-row-reverse'
@@ -494,7 +502,8 @@ const ChatBox: React.FC = () => {
                 >
                   {msg.content}
                 </div>
-              </div>
+              </div> */
+              <MessageItem key={i} msg={msg} />
             ))}
 
             {messages.length === 1 && (
@@ -511,7 +520,7 @@ const ChatBox: React.FC = () => {
               </div>
             )}
 
-            {isTyping && (
+            {/* {isTyping && (
               <div className="flex items-start space-x-2">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200">
                   🤖
@@ -524,7 +533,9 @@ const ChatBox: React.FC = () => {
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
+
+            {isTyping && <TypingIndicator />}
 
             {chatStep === 'district' && !isTyping && (
               <div className="flex flex-wrap gap-2 mt-2">
@@ -558,7 +569,7 @@ const ChatBox: React.FC = () => {
             )}
 
           {chatStep === 'price' && !isTyping && (
-            <div className="flex flex-col items-center space-y-6 p-4 rounded-lg shadow-md bg-white max-w-md mx-auto">
+        /*     <div className="flex flex-col items-center space-y-6 p-4 rounded-lg shadow-md bg-white max-w-md mx-auto">
               <div className="flex flex-col items-center space-y-4 w-full">
                 <p className="text-lg font-semibold text-gray-700">
                   Select Your Price Range
@@ -632,10 +643,15 @@ const ChatBox: React.FC = () => {
               >
                 Confirm Price
               </button>
-            </div>
+            </div> */
+            <PriceRangeSelector
+            pricesRange={pricesRange}
+            setPriceRange={setPriceRange}
+            handleConfirmPrice={handleConfirmPrice}
+          />
           )}
 
-          {chatStep === 'done' && properties.length > 0 && (
+         {/*  {chatStep === 'done'  && properties.length > 0 && (
             <>
               <div className="mt-6">
                 <h2 className="text-xl font-bold mb-4">Matching Properties</h2>
@@ -661,10 +677,36 @@ const ChatBox: React.FC = () => {
                 </div>
               </div>
             </>
-          )}
+          )} */}
 
+            {showProperties && properties.length > 0 && (
+              <>
+                <div className="mt-6">
+                  <h2 className="text-xl font-bold mb-4">Matching Properties</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
+                    {properties.map((property, index) => (
+                      <PropertyCard key={property.half_property_url || index} property={property} />
+                    ))}
+                  </div>
+                </div>
 
-          
+                <div className="mt-6">
+                  <h2 className="text-md font-semibold mb-2">Quick Insights</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestedQuestions.map((q, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleSuggestedQuestion(q)}
+                        className="bg-[#f5694b]/10 hover:bg-[#f5694b]/20 text-sm text-[#f5694b] px-4 py-2 rounded-lg border border-[#f5694b]"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
 
 
             {awaitingDateConfirmation && !isTyping  &&  (
