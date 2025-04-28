@@ -69,6 +69,7 @@ const suggestedQuestions = [
   "Which area has the most listings?",
   "What is the average price of properties?",
   "Which listings have pools or gyms?",
+  "What Properties are close to UDEP and within how many miles? and provide link to the property",
 ];
 
 type ChatStep = null | 'district' | 'date' | 'confirmDates' | 'price' | 'done' | 'propertyInsights';
@@ -459,6 +460,7 @@ const ChatBox: React.FC = () => {
           minPrice: updatedBookingDetails.minPrice,
           maxPrice: updatedBookingDetails.maxPrice
         });
+        console.log(response);
         setProperties(response);
         setShowProperties(true);
       } catch (error) {
