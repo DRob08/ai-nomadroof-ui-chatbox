@@ -189,6 +189,7 @@ const ChatBox: React.FC = () => {
     try {
       const insightResponse = await getPropertyInsights(question, properties);
       console.log(insightResponse.answer)
+
       addAssistantMessage(question, insightResponse.answer || 'No insight available.');
     } catch (err) {
       addAssistantMessage(question, 'Something went wrong fetching insights.');
@@ -215,73 +216,6 @@ const ChatBox: React.FC = () => {
     }, delay);
   };
 
-/*   const PropertyCard: React.FC<{ property: any }> = ({ property }) => {
-    const {
-      post_title,
-      full_thumbnail_url,
-      property_price_per_month,
-      property_rooms,
-      property_bedrooms,
-      property_bathrooms,
-      property_address,
-      property_state,
-      property_country,
-      electricity_included,
-      pool,
-      water_included,
-      gym,
-      heating,
-      hot_tub,
-      air_conditioning,
-      free_parking_on_premises,
-      desk,
-      hangers,
-      closet,
-      iron,
-    } = property;
-  
-    const location = [property_address, property_state, property_country].filter(Boolean).join(', ');
-  
-    const amenities: string[] = [];
-    if (electricity_included) amenities.push('Electricity');
-    if (pool) amenities.push('Pool');
-    if (water_included) amenities.push('Water');
-    if (gym) amenities.push('Gym');
-    if (heating) amenities.push('Heating');
-    if (hot_tub) amenities.push('Hot Tub');
-    if (air_conditioning) amenities.push('Air Conditioning');
-    if (free_parking_on_premises) amenities.push('Free Parking');
-    if (desk) amenities.push('Desk');
-    if (hangers) amenities.push('Hangers');
-    if (closet) amenities.push('Closet');
-    if (iron) amenities.push('Iron');
-  
-    return (
-      <div className="bg-white border border-gray-200 shadow-md rounded-2xl p-4 space-y-2 hover:shadow-lg transition duration-300">
-        <img
-          src={full_thumbnail_url || '/default-thumbnail.jpg'}
-          alt={post_title}
-          className="rounded-xl w-full h-48 object-cover mb-2"
-        />
-        <h3 className="text-lg font-semibold mb-1">{post_title}</h3>
-  
-        <p className="text-sm text-gray-600">{location}</p>
-        <p className="text-lg font-bold text-emerald-600">${property_price_per_month} / Month</p>
-        <p className="text-sm mt-1">
-          🛏 {property_bedrooms || 'N/A'} rooms &nbsp; 🚿 {property_bathrooms || 'N/A'} baths
-        </p>
-  
-        <div className="mt-2 flex flex-wrap gap-2">
-          {amenities.map((a: string, index: number) => (
-            <span key={index} className="flex items-center bg-gray-200 text-xs px-2 py-1 rounded-full">
-              {a}
-            </span>
-          ))}
-        </div>
-      </div>
-    );
-  }; */
-  
   const handleDistrictSelection = (districtName: string) => {
     const district = districtOptions.find((d) => d.name === districtName);
     if (!district) return;
@@ -335,7 +269,7 @@ const ChatBox: React.FC = () => {
       }
     }
 
-    if (chatStep === 'price') {
+   /*  if (chatStep === 'price') {
       const updatedBookingDetails = {
         ...bookingDetails,
         priceRange: messageText,
@@ -369,7 +303,7 @@ const ChatBox: React.FC = () => {
     
       fetchProperties();
       return;
-    }
+    } */
     
     
     if (messageText.toLowerCase().includes('properties in lima')) {
@@ -486,25 +420,6 @@ const ChatBox: React.FC = () => {
       <div className="flex-1 overflow-y-auto space-y-4 pr-4 scrollbar-thin scrollbar-thumb-gray-400">
           <>
           {messages.map((msg, i) => (
-            /*   <div
-                key={i}
-                className={`flex items-start space-x-2 ${
-                  msg.role === 'assistant' ? '' : 'flex-row-reverse'
-                }`}
-              >
-                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200">
-                  {msg.role === 'assistant' ? '🤖' : '🧑'}
-                </div>
-                <div
-                  className={`max-w-xs rounded-lg px-4 py-2 text-sm whitespace-pre-line ${
-                    msg.role === 'assistant'
-                      ? 'bg-gray-100 text-gray-800'
-                      : 'bg-[#f5694b] text-white'
-                  }`}
-                >
-                  {msg.content}
-                </div>
-              </div> */
               <MessageItem key={i} msg={msg} />
             ))}
 
@@ -521,21 +436,6 @@ const ChatBox: React.FC = () => {
                 ))}
               </div>
             )}
-
-            {/* {isTyping && (
-              <div className="flex items-start space-x-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200">
-                  🤖
-                </div>
-                <div className="max-w-xs rounded-lg px-4 py-2 text-sm bg-gray-100 text-gray-800">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                  </div>
-                </div>
-              </div>
-            )} */}
 
             {isTyping && <TypingIndicator />}
 
@@ -708,7 +608,6 @@ const ChatBox: React.FC = () => {
                 </div>
               </>
             )}
-
 
 
             {awaitingDateConfirmation && !isTyping  &&  (
