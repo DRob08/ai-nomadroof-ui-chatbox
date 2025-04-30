@@ -13,6 +13,7 @@ export interface PropertyModel {
     property_latitude?: string;
     property_longitude?: string;
     property_available_days?:string;
+    property_booking_dates?:string;
     guest_no?: string;
     property_price?: string;
     property_price_per_month?: string;
