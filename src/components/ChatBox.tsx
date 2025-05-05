@@ -1,26 +1,5 @@
-import React, { JSX, useEffect, useState } from 'react';
+import React, { JSX, useEffect, useState, useRef, useLayoutEffect } from 'react';
 import { Message } from '../types/chat';
-import {
-  Bed,
-  Bath,
-  Wifi,
-  Snowflake,
-  Car,
-  Tv,
-  Coffee,
-  Utensils,
-  ShieldCheck,
-  Sparkles,
-  Anchor, // For ocean view or seaside related
-  Sun, // For beachfront related
-  MapPin, // For location related
-  Heart, // For pet-friendly properties
-  Shield, // For Security System
-  Umbrella, // For Patio or outdoor features
-  Bolt, // For electricity or power-related amenities
-  Leaf, // For garden or eco-friendly properties
-  Monitor, // For SmartTV or technology-related properties
-} from 'lucide-react';
 import { getProperties } from '../services/propertyService';
 import { getPropertyInsights } from '../services/aiService';
 import { PropertyModel } from '../types/property';
@@ -29,35 +8,11 @@ import PriceRangeSelector from './PriceRangeSelector'; // Import from the same f
 import PropertyCard from './PropertyCard'; // Import from the same folder
 import MessageItem from './MessageItem';
 import TypingIndicator from './TypingIndicator';
-
-
+import { Console } from 'console';
 
 const MIN = 0;
 const MAX = 1000;
 const STEP = 10;
-
-// Helper mapping of amenities to icons
-const amenityIcons: { [key: string]: JSX.Element } = {
-  Wifi: <Wifi className="w-4 h-4" />,
-  AC: <Snowflake className="w-4 h-4" />,
-  Parking: <Car className="w-4 h-4" />,
-  TV: <Tv className="w-4 h-4" />,
-  Breakfast: <Coffee className="w-4 h-4" />,
-  Kitchen: <Utensils className="w-4 h-4" />,
-  Security: <ShieldCheck className="w-4 h-4" />,
-  Clean: <Sparkles className="w-4 h-4" />,
-  Gym: <Bed className="w-4 h-4" />, // Using 'Bed' for Gym-related (alternatively could use a dumbbell if available)
-  OceanView: <Anchor className="w-4 h-4" />,
-  Beachfront: <Sun className="w-4 h-4" />,
-  Location: <MapPin className="w-4 h-4" />,
-  PetFriendly: <Heart className="w-4 h-4" />,
-  SecuritySystem: <Shield className="w-4 h-4" />,
-  Patio: <Umbrella className="w-4 h-4" />,
-  Electricity: <Bolt className="w-4 h-4" />,
-  Garden: <Leaf className="w-4 h-4" />,
-  SmartTV: <Monitor className="w-4 h-4" />,
-};
-
 
 const initialSuggestions = [
   'Search for properties in Lima',
@@ -98,7 +53,6 @@ const ChatBox: React.FC = () => {
     maxPrice: '',
   });
   const [pricesRange, setPriceRange] = useState<[number, number]>([400, 600]);
-
   const [latestInsight, setLatestInsight] = useState<string | null>(null);
   const [properties, setProperties] = useState<PropertyModel[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -109,6 +63,7 @@ const ChatBox: React.FC = () => {
     range: 'spring' | 'fall';
     proposedDateRange: string;
   }>(null);
+  const [resetComplete, setResetComplete] = useState(false);
 
   const formatDateRange = (startMonth: number, endMonth: number): string => {
     const now = new Date();
@@ -144,13 +99,7 @@ const ChatBox: React.FC = () => {
         range,
         proposedDateRange: `${format(start)} to ${format(end)}`,
       });
-     /*  setMessages(prev => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: `It looks like the ${range === 'spring' ? 'March to July' : 'August to December'} semester is in the past for this year. Did you mean to plan for ${year}?`,
-        },
-      ]); */
+    
       addAssistantMessageOnly(
         `It looks like the ${range === 'spring' ? 'March to July' : 'August to December'} semester is in the past for this year. Did you mean to plan for ${year}?`
       );
@@ -166,33 +115,78 @@ const ChatBox: React.FC = () => {
     }));
     
     setChatStep('price');
-   /*  setMessages(prev => [
-      ...prev,
-      {
-        role: 'user',
-        content: range === 'spring' ? 'March to July' : 'August to December',
-      },
-      {
-        role: 'assistant',
-        content: 'Got it! What is your preferred price range? (e.g. $50–$100)',
-      },
-    ]); */
     addAssistantMessage(
       range === 'spring' ? 'March to July' : 'August to December' ,
      `Got it! What is your preferred price range? (e.g. $50–$100)`
    );
   };
 
+  const resetChat = () => {
+    setMessages([]);
+    setInput('');
+    setChatStep(null);
+    setBookingDetails({
+      city: '',
+      district: '',
+      districtCoordinates: { lat: 0, lng: 0 },
+      dates: '',
+      startDate: '',
+      endDate: '',
+      priceRange: '',
+      minPrice: '',
+      maxPrice: '',
+    });
+    setPriceRange([400, 600]);
+    setLatestInsight(null);
+    setProperties([]);
+    setLoading(true);
+    setIsTyping(false);
+    setSearchResults([]);
+    setShowProperties(false);
+    setAwaitingDateConfirmation(null);
+
+    // Set resetComplete flag to true to trigger scrolling
+    setResetComplete(true);
+
+    const Greetings: Message = {
+      role: 'assistant',
+      type: 'text',
+      content: 'Hi! How can I assist you with your property search today?',
+      data: '',
+    };
+
+    // Add suggestions after showing the properties
+    setMessages(prev => [...prev, Greetings]);
+
+    // Scroll to the top of the chat container
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    } 
+
+    // Scroll to top
+setTimeout(() => {
+  scrollContainerRef.current?.scrollIntoView({ behavior: 'smooth' });
+}, 100); 
+  };
+  
   const handleSuggestedQuestion = async (question: string) => {
     setChatStep('propertyInsights');
   
     try {
       const insightResponse = await getPropertyInsights(question, properties);
-      console.log(insightResponse.answer)
-
+  
       addAssistantMessage(question, insightResponse.answer || 'No insight available.');
+  
+      // Scroll to bottom after a slight delay to let React render the new message
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     } catch (err) {
       addAssistantMessage(question, 'Something went wrong fetching insights.');
+  
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     }
   };
   
@@ -354,59 +348,140 @@ const ChatBox: React.FC = () => {
   };
 
   const handleConfirmPrice = () => {
-    setBookingDetails(prev => ({
-      ...prev,
-      minPrice: pricesRange[0].toString(),
-      maxPrice: pricesRange[1].toString(),
-      priceRange: `${pricesRange[0]}-${pricesRange[1]}`
-    }));
-
-
     const updatedBookingDetails = {
       ...bookingDetails,
       minPrice: pricesRange[0].toString(),
       maxPrice: pricesRange[1].toString(),
       priceRange: `${pricesRange[0]}-${pricesRange[1]}`,
     };
-
+  
+    setBookingDetails(updatedBookingDetails);
+  
     const userMsg: Message = { role: 'user', content: `${pricesRange[0]}-${pricesRange[1]}` };
     setMessages(prev => [...prev, userMsg]);
-
-    setBookingDetails(updatedBookingDetails);
-    
+  
     setChatStep('done');
-
+  
     addAssistantMessageOnly(
       `Thanks! Here's what I found based on your criteria:\n\n📍 Location: ${updatedBookingDetails.city}, ${updatedBookingDetails.district}\n📅 Dates: ${updatedBookingDetails.dates}\n💵 Price Range: ${updatedBookingDetails.priceRange}\n\n(Showing search results...)`
     );
   
-    const fetchProperties = async () => {
+    setTimeout(async () => {
+      setIsTyping(true);
       try {
         setLoading(true);
+  
         const response = await getProperties({
           city: updatedBookingDetails.city,
           district: updatedBookingDetails.district,
           dates: updatedBookingDetails.dates,
-          startDate:updatedBookingDetails.startDate,
-          endDate:updatedBookingDetails.endDate,
+          startDate: updatedBookingDetails.startDate,
+          endDate: updatedBookingDetails.endDate,
           priceRange: updatedBookingDetails.priceRange,
-          districtCoordinates : updatedBookingDetails.districtCoordinates,
+          districtCoordinates: updatedBookingDetails.districtCoordinates,
           minPrice: updatedBookingDetails.minPrice,
-          maxPrice: updatedBookingDetails.maxPrice
+          maxPrice: updatedBookingDetails.maxPrice,
         });
-        console.log(response);
+  
         setProperties(response);
         setShowProperties(true);
+  
+        if (response.length === 0) {
+          addAssistantMessageOnly(
+            `Hmm, I couldn't find any properties that match your criteria right now.\n\nYou might want to try expanding your search area, increasing your price range, or changing the dates.`
+          );
+  
+          const noResultsSuggestions: Message = {
+            role: 'assistant',
+            type: 'suggestions',
+            content: 'Here are a few ways you could adjust your search:',
+            data: [
+              'Try a different district',
+              'Increase your max price',
+              'Change your dates to include weekdays',
+              'Search all of the city instead of a specific area',
+            ],
+          };
+  
+          setMessages(prev => [...prev, noResultsSuggestions]);
+          return;
+        }
+  
+        addAssistantMessageOnly(`Here are ${response.length} properties based on your criteria:`);
+  
+        const propertiesMsg: Message = {
+          role: 'assistant',
+          type: 'properties',
+          content: '',
+          data: response,
+        };
+  
+        setTimeout(() => {
+          setMessages(prev => [...prev, propertiesMsg]);
+  
+          const suggestionsMsg: Message = {
+            role: 'assistant',
+            type: 'suggestions',
+            content: 'Here are some quick insights for you:',
+            data: suggestedQuestions,
+          };
+  
+          setMessages(prev => [...prev, suggestionsMsg]);
+        }, 1000);
       } catch (error) {
         console.error('Error fetching properties:', error);
+        addAssistantMessageOnly(`Oops! Something went wrong while searching. Please try again in a moment.`);
       } finally {
+        setIsTyping(false);
         setLoading(false);
       }
-    };
+    }, 1100);
+  };
   
-    fetchProperties();
+
+ 
+
+ const containerRef = useRef<HTMLDivElement>(null);
+
+ const [isAtBottom, setIsAtBottom] = useState(true); // Track if the user is at the bottom
+
+ useEffect(() => {
+  console.log('🌀 useEffect triggered');
+  console.log('📦 messages.length:', messages.length);
+  console.log('📍 isAtBottom:', isAtBottom);
+  console.log('🔍 containerRef.current:', containerRef.current);
+  console.log('🔚 bottomRef.current:', bottomRef.current);
+
+  if (messages.length > 5) {
+    if (isAtBottom && containerRef.current && bottomRef.current) {
+      console.log('✅ Conditions met — scrolling to bottom...');
+      bottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      console.log('🚫 Skipping scroll due to one or more conditions failing:');
+      if (!isAtBottom) console.log('   - User is not at bottom');
+      if (!containerRef.current) console.log('   - containerRef is null');
+      if (!bottomRef.current) console.log('   - bottomRef is null');
+    }
+  } else {
+    console.log('🔕 Not enough messages to scroll (<= 5)');
+  }
+}, [messages, isAtBottom]);
+
+
+  const handleScroll = () => {
+    if (containerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+      setIsAtBottom(scrollTop + clientHeight === scrollHeight);
+    }
   };
 
+  // Add a scroll event listener to handle checking if at the bottom
+  useEffect(() => {
+    const container = containerRef.current;
+    container?.addEventListener('scroll', handleScroll);
+    return () => container?.removeEventListener('scroll', handleScroll);
+  }, []);
+  
   useEffect(() => {
     if (messages.length === 0) {
       setMessages([
@@ -415,13 +490,40 @@ const ChatBox: React.FC = () => {
     }
   }, []);
 
+  /* useLayoutEffect(() => {
+    if (resetComplete) {
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        setResetComplete(false); // Reset the flag
+      }, 100); // Delay to allow DOM to update
+    }
+  }, [resetComplete]); */
+  
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   return (
-    <div className="flex flex-col h-screen p-4">
-      <div className="flex-1 overflow-y-auto space-y-4 pr-4 scrollbar-thin scrollbar-thumb-gray-400">
+    <div ref={scrollContainerRef}  className="flex flex-col h-screen p-4 relative">
+         {/*    <div ref={scrollContainerRef} /> */}
+      <div ref={containerRef} className="flex-1 overflow-y-auto space-y-4 pr-4 scrollbar-thin scrollbar-thumb-gray-400">
+
           <>
-          {messages.map((msg, i) => (
-              <MessageItem key={i} msg={msg} />
+           {messages.map((msg, i) => (
+              <MessageItem key={i} msg={msg} 
+              handleSuggestedQuestion={handleSuggestedQuestion}
+               />
             ))}
+
+{messages.length > 0 && (
+  <button
+    onClick={resetChat}
+    className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1.5 text-sm rounded hover:bg-red-600 shadow-md z-10"
+  >
+    Start Over
+  </button>
+)}
 
             {messages.length === 1 && (
               <div className="flex flex-wrap gap-2 mt-2">
@@ -471,144 +573,12 @@ const ChatBox: React.FC = () => {
             )}
 
           {chatStep === 'price' && !isTyping && (
-        /*     <div className="flex flex-col items-center space-y-6 p-4 rounded-lg shadow-md bg-white max-w-md mx-auto">
-              <div className="flex flex-col items-center space-y-4 w-full">
-                <p className="text-lg font-semibold text-gray-700">
-                  Select Your Price Range
-                </p>
-
-                <p className="text-md text-gray-600">
-                  ${pricesRange[0]} - ${pricesRange[1]}
-                </p>
-
-                <div className="w-11/12">
-                  <Range
-                    values={pricesRange}
-                    step={STEP}
-                    min={MIN}
-                    max={MAX}
-                    onChange={(values) => setPriceRange(values as [number, number])}
-                    renderTrack={({ props, children }) => (
-                      <div
-                        {...props}
-                        style={{
-                          ...props.style,
-                          height: '8px',
-                          width: '100%',
-                          background: getTrackBackground({
-                            values: pricesRange,
-                            colors: ['#d1d5db', '#f5694b', '#d1d5db'], // use your color
-                            min: MIN,
-                            max: MAX,
-                          }),
-                          borderRadius: '6px',
-                        }}
-                        className="w-full"
-                      >
-                        {children}
-                      </div>
-                    )}
-                    renderThumb={({ props, index }) => (
-                      <div
-                        {...props}
-                        style={{
-                          ...props.style,
-                          height: '20px',
-                          width: '20px',
-                          backgroundColor: '#f5694b', // your color
-                          border: '2px solid white',
-                          borderRadius: '50%',
-                          boxShadow: '0 0 0 4px rgba(245, 105, 75, 0.4)', // soft glow of your color
-                          display: 'flex',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}
-                        className="focus:outline-none"
-                      >
-                        <div
-                          style={{
-                            height: '6px',
-                            width: '6px',
-                            backgroundColor: 'white',
-                            borderRadius: '50%',
-                          }}
-                        />
-                      </div>
-                    )}
-                  />
-                </div>
-              </div>
-
-              <button
-                onClick={handleConfirmPrice}
-                className="mt-4 px-6 py-2 bg-[#f5694b] text-white text-sm font-semibold rounded-full hover:bg-[#e65a3d] transition"
-              >
-                Confirm Price
-              </button>
-            </div> */
             <PriceRangeSelector
             pricesRange={pricesRange}
             setPriceRange={setPriceRange}
             handleConfirmPrice={handleConfirmPrice}
           />
           )}
-
-         {/*  {chatStep === 'done'  && properties.length > 0 && (
-            <>
-              <div className="mt-6">
-                <h2 className="text-xl font-bold mb-4">Matching Properties</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
-                  {properties.map((property, index) => (
-                    <PropertyCard key={property.half_property_url || index} property={property} />
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <h2 className="text-md font-semibold mb-2">Quick Insights</h2>
-                <div className="flex flex-wrap gap-2">
-                  {suggestedQuestions.map((q, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleSuggestedQuestion(q)}
-                      className="bg-[#f5694b]/10 hover:bg-[#f5694b]/20 text-sm text-[#f5694b] px-4 py-2 rounded-lg border border-[#f5694b]"
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )} */}
-
-            {showProperties && properties.length > 0 && (
-              <>
-                <div className="mt-6">
-                  <h2 className="text-xl font-bold mb-4">Matching Properties</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
-                    {properties.map((property, index) => (
-                      <PropertyCard key={property.half_property_url || index} property={property} />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-6">
-                  <h2 className="text-md font-semibold mb-2">Quick Insights</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {suggestedQuestions.map((q, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleSuggestedQuestion(q)}
-                        className="bg-[#f5694b]/10 hover:bg-[#f5694b]/20 text-sm text-[#f5694b] px-4 py-2 rounded-lg border border-[#f5694b]"
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
 
             {awaitingDateConfirmation && !isTyping  &&  (
               <div className="flex gap-2 mt-2">
@@ -626,9 +596,22 @@ const ChatBox: React.FC = () => {
                 </button>
               </div>
             )}
+             <div ref={bottomRef} /> 
           </>
         
       </div>
+
+       {/* Start Over Button */}
+    {messages.length > 0 && (
+      <div className="flex justify-end mt-2">
+        <button
+          onClick={resetChat}
+          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+        >
+          Start Over
+        </button>
+      </div>
+    )}
 
       <div className="flex mt-4">
         <input
