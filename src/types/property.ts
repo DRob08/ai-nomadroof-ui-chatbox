@@ -7,8 +7,8 @@ export interface PropertyModel {
     property_bedrooms?: string;
     property_bathrooms?: string;
     property_address?: string;
+    property_district?: string;
     property_state?: string;
-    property_county?: string;
     property_country?: string;
     property_latitude?: string;
     property_longitude?: string;
@@ -37,5 +37,6 @@ export interface PropertyModel {
     hangers?: boolean;
     closet?: boolean;
     iron?: boolean;
+    is_prop_featured?: boolean;
   }
   

@@ -1,37 +1,35 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import ChatBox from "../components/ChatBox";
 import ExclusiveSidebar from "../components/ExclusiveSidebar";
+import { PropertyModel } from "../types/property";
+import { getAvailableExclusiveProperties } from '../services/propertyService';
+import Community from "../components/Community"; // Add this line
 
-const mockProperties = [
-  {
-    id: "1",
-    name: "Ocean View Penthouse",
-    image: "/images/penthouse.jpg",
-    price: "From $450/night",
-    location: "Malibu, CA",
-  },
-  {
-    id: "2",
-    name: "Historic Castle Stay",
-    image: "/images/castle.jpg",
-    price: "From $600/night",
-    location: "Edinburgh, Scotland",
-  },
-  {
-    id: "3",
-    name: "Modern Loft in Soho",
-    image: "/images/loft.jpg",
-    price: "From $300/night",
-    location: "New York, NY",
-  },
-];
+
+
+
 
 const Home = () => {
+  const [properties, setProperties] = useState<PropertyModel[]>([]);
+
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        const data = await getAvailableExclusiveProperties();
+        setProperties(data);
+      } catch (error) {
+        console.error("Error loading exclusive properties:", error);
+      }
+    };
+
+    fetchProperties();
+  }, []);
+
   return (
     <div className="flex flex-col md:flex-row max-w-screen-xl mx-auto px-4 py-8 gap-x-8">
       {/* Sidebar */}
       <div className="md:w-1/4 w-full mb-8 md:mb-0">
-        <ExclusiveSidebar properties={mockProperties} />
+        <ExclusiveSidebar properties={properties} />
       </div>
 
       {/* Main */}
@@ -48,6 +46,7 @@ const Home = () => {
         <div className="max-w-3xl mx-auto">
           <ChatBox />
         </div>
+        <Community /> {/* Add this line */}
       </div>
     </div>
   );

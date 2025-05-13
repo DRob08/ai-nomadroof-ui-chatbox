@@ -55,3 +55,10 @@ export const getPropertyInsights = async (question: string, properties: Property
     });
     return response.data;
   };
+
+  export const getAvailableExclusiveProperties = async (): Promise<PropertyModel[]> => {
+    const url = `${API_BASE_URL}/property/exclusive-properties`;
+    const response = await axios.get(url);
+    return response.data;
+  };
+  

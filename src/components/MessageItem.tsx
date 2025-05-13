@@ -3,10 +3,11 @@ import PropertyCard from './PropertyCard'; // adjust to your actual path
 
 interface MessageItemProps {
   msg: Message;
-  handleSuggestedQuestion: (question: string) => void; // Add this prop
+  handleSuggestedQuestion: (question: string) => void;
+  handleSuggestionClick?: (suggestion: string) => void; // NEW
 }
 
-const MessageItem: React.FC<MessageItemProps> = ({ msg, handleSuggestedQuestion }) => {  // Destructure the prop here
+const MessageItem: React.FC<MessageItemProps> = ({ msg, handleSuggestedQuestion, handleSuggestionClick }) => {
   // Property list rendering
   if (msg.type === 'properties' && Array.isArray(msg.data)) {
     return (
@@ -33,16 +34,43 @@ const MessageItem: React.FC<MessageItemProps> = ({ msg, handleSuggestedQuestion 
     );
   }
 
-   // Quick Insights suggestions (new block)
-   if (msg.type === 'suggestions' && Array.isArray(msg.data)) {
+  //  // Quick Insights suggestions (new block)
+  //  if (msg.type === 'suggestions' && Array.isArray(msg.data)) {
+  //   return (
+  //     <div className="mt-6">
+  //       <h2 className="text-md font-semibold mb-2">Quick Suggestions</h2>
+  //       <div className="flex flex-wrap gap-2">
+  //         {msg.data.map((q: string, i: number) => (
+  //           <button
+  //             key={i}
+  //             onClick={() => handleSuggestedQuestion(q)} // This is now in scope
+  //             className="bg-[#f5694b]/10 hover:bg-[#f5694b]/20 text-sm text-[#f5694b] px-4 py-2 rounded-lg border border-[#f5694b]"
+  //           >
+  //             {q}
+  //           </button>
+  //         ))}
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
+  if ((msg.type === 'suggestions' || msg.type === 'flowSuggestions') && Array.isArray(msg.data)) {
     return (
       <div className="mt-6">
-        <h2 className="text-md font-semibold mb-2">Quick Insights</h2>
+        <h2 className="text-md font-semibold mb-2">
+          {msg.type === 'suggestions' ? 'Quick Suggestions' : 'Adjust Your Search'}
+        </h2>
         <div className="flex flex-wrap gap-2">
           {msg.data.map((q: string, i: number) => (
             <button
               key={i}
-              onClick={() => handleSuggestedQuestion(q)} // This is now in scope
+              onClick={() => {
+                if (msg.type === 'flowSuggestions') {
+                  handleSuggestionClick?.(q);
+                } else {
+                  handleSuggestedQuestion(q);
+                }
+              }}
               className="bg-[#f5694b]/10 hover:bg-[#f5694b]/20 text-sm text-[#f5694b] px-4 py-2 rounded-lg border border-[#f5694b]"
             >
               {q}
@@ -52,6 +80,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ msg, handleSuggestedQuestion 
       </div>
     );
   }
+  
 
   // Default text message
   const isAssistant = msg.role === 'assistant';

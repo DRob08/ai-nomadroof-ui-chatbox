@@ -10,7 +10,7 @@ interface PriceRangeSelectorProps {
 
 const STEP = 1;
 const MIN = 0;
-const MAX = 1000;
+const MAX = 1500;
 
 const PriceRangeSelector: React.FC<PriceRangeSelectorProps> = ({
   pricesRange,

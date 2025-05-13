@@ -9,9 +9,11 @@ const PropertyCard: React.FC<{ property: PropertyModel }> = ({ property }) => {
     property_bedrooms,
     property_bathrooms,
     property_address,
+    property_district,
     property_state,
     property_country,
     electricity_included,
+    is_prop_featured,
     pool,
     water_included,
     gym,
@@ -24,10 +26,12 @@ const PropertyCard: React.FC<{ property: PropertyModel }> = ({ property }) => {
     closet,
     iron,
     about_neighborhood,
-    half_property_url, // Make sure you're also extracting this
+    half_property_url,
   } = property;
 
-  const location = [property_address, property_state, property_country].filter(Boolean).join(', ');
+  const addressCityOnly = property.property_address?.split(",").slice(1).join(",").trim();
+
+  const location = [property_district, property_state, property_country].filter(Boolean).join(', ');
 
   const amenities: string[] = [];
   if (electricity_included) amenities.push('Electricity');
@@ -44,8 +48,14 @@ const PropertyCard: React.FC<{ property: PropertyModel }> = ({ property }) => {
   if (iron) amenities.push('Iron');
 
   return (
-    <div className="bg-white border border-gray-200 shadow-md rounded-2xl p-4 space-y-2 hover:shadow-lg transition duration-300">
-      <a href={`https://www.nomadroof.com/properties/${half_property_url}`} target="_blank" rel="noopener noreferrer">
+    <div className="relative bg-white border border-gray-200 shadow-md rounded-2xl p-4 space-y-2 hover:shadow-lg transition duration-300">
+      
+      <a href={`https://www.nomadroof.com/properties/${half_property_url}`} target="_blank" rel="noopener noreferrer" className="block relative">
+        {is_prop_featured && (
+          <div className="absolute top-2 left-2 bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-md shadow-md z-10">
+            Featured
+          </div>
+        )}
         <img
           src={full_thumbnail_url || '/default-thumbnail.jpg'}
           alt={post_title}

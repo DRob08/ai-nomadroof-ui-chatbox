@@ -21,21 +21,32 @@ const initialSuggestions = [
 ];
 
 const suggestedQuestions = [
-  "Which area has the most listings?",
+  "Which Distrcit has the most listings?",
   "What is the average price of properties?",
   "Which listings have pools or gyms?",
-  "What Properties are close to UDEP and within how many miles? and provide link to the property",
+  "What Properties are close to PUCP and within how many km?",
 ];
 
 type ChatStep = null | 'district' | 'date' | 'confirmDates' | 'price' | 'done' | 'propertyInsights';
+
+// const districtOptions = [
+//   { name: 'Miraflores', lat: -12.1211, lng: -77.0297 },
+//   { name: 'Barranco', lat: -12.1449, lng: -77.0202 },
+//   { name: 'San Isidro', lat: -12.0972, lng: -77.0369 },
+//   { name: 'Surco', lat: -12.1586, lng: -76.9986 },
+//   { name: 'La Molina', lat: -12.0909, lng: -76.9350 },
+// ];
+
 
 const districtOptions = [
   { name: 'Miraflores', lat: -12.1211, lng: -77.0297 },
   { name: 'Barranco', lat: -12.1449, lng: -77.0202 },
   { name: 'San Isidro', lat: -12.0972, lng: -77.0369 },
-  { name: 'Surco', lat: -12.1586, lng: -76.9986 },
   { name: 'La Molina', lat: -12.0909, lng: -76.9350 },
+  { name: 'Lince', lat: -12.0853, lng: -77.0342 },
+  { name: 'Jesús María', lat: -12.0800, lng: -77.0431 },
 ];
+
 
 const ChatBox: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -62,6 +73,8 @@ const ChatBox: React.FC = () => {
   const [awaitingDateConfirmation, setAwaitingDateConfirmation] = useState<null | {
     range: 'spring' | 'fall';
     proposedDateRange: string;
+    startDate: string;
+    endDate:string;
   }>(null);
   const [resetComplete, setResetComplete] = useState(false);
 
@@ -98,6 +111,8 @@ const ChatBox: React.FC = () => {
       setAwaitingDateConfirmation({
         range,
         proposedDateRange: `${format(start)} to ${format(end)}`,
+        startDate: format(start),
+        endDate: format(end),
       });
     
       addAssistantMessageOnly(
@@ -249,6 +264,10 @@ setTimeout(() => {
         setBookingDetails(prev => ({
           ...prev,
           dates: awaitingDateConfirmation.proposedDateRange,
+          startDate: awaitingDateConfirmation.startDate,
+          endDate: awaitingDateConfirmation.startDate
+          //need to update dates here start and end date
+
         }));
         setAwaitingDateConfirmation(null);
         setChatStep('price');
@@ -387,13 +406,23 @@ setTimeout(() => {
         setShowProperties(true);
   
         if (response.length === 0) {
-          addAssistantMessageOnly(
-            `Hmm, I couldn't find any properties that match your criteria right now.\n\nYou might want to try expanding your search area, increasing your price range, or changing the dates.`
-          );
-  
+          setProperties([]); // Clear previous results
+          setShowProperties(false);
+          // const noResultsSuggestions: Message = {
+          //   role: 'assistant',
+          //   type: 'suggestions',
+          //   content: 'Here are a few ways you could adjust your search:',
+          //   data: [
+          //     'Try a different district',
+          //     'Increase your max price',
+          //     'Change your dates to include weekdays',
+          //     'Search all of the city instead of a specific area',
+          //   ],
+          // };
+
           const noResultsSuggestions: Message = {
             role: 'assistant',
-            type: 'suggestions',
+            type: 'flowSuggestions', // <-- changed from 'suggestions'
             content: 'Here are a few ways you could adjust your search:',
             data: [
               'Try a different district',
@@ -402,32 +431,42 @@ setTimeout(() => {
               'Search all of the city instead of a specific area',
             ],
           };
-  
-          setMessages(prev => [...prev, noResultsSuggestions]);
+          
+          
+          const noResultsText: Message = {
+            role: 'assistant',
+            type: 'text',
+            content: `Hmm, I couldn't find any properties that match your criteria right now.\n\nYou might want to try expanding your search area, increasing your price range, or changing the dates.`,
+          };
+          
+          setMessages(prev => [...prev, noResultsText, noResultsSuggestions]);
+          
           return;
         }
   
         addAssistantMessageOnly(`Here are ${response.length} properties based on your criteria:`);
-  
+        console.log(response)
         const propertiesMsg: Message = {
           role: 'assistant',
           type: 'properties',
           content: '',
           data: response,
         };
-  
-        setTimeout(() => {
-          setMessages(prev => [...prev, propertiesMsg]);
-  
-          const suggestionsMsg: Message = {
-            role: 'assistant',
-            type: 'suggestions',
-            content: 'Here are some quick insights for you:',
-            data: suggestedQuestions,
-          };
-  
-          setMessages(prev => [...prev, suggestionsMsg]);
-        }, 1000);
+        if (response.length > 0) {
+          setTimeout(() => {
+            setMessages(prev => [...prev, propertiesMsg]);
+    
+            const suggestionsMsg: Message = {
+              role: 'assistant',
+              type: 'suggestions',
+              content: 'Here are some quick insights for you:',
+              data: suggestedQuestions,
+            };
+
+            setMessages(prev => [...prev, suggestionsMsg]);
+          }, 1000);
+        }
+      
       } catch (error) {
         console.error('Error fetching properties:', error);
         addAssistantMessageOnly(`Oops! Something went wrong while searching. Please try again in a moment.`);
@@ -437,27 +476,69 @@ setTimeout(() => {
       }
     }, 1100);
   };
+
+const handleSuggestionClick = (suggestion: string) => {
+    switch (suggestion) {
+      case 'Try a different district':
+        setChatStep('district');
+        //setSelectedDistrict(null); // or however you're resetting this step
+        setMessages(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            type: 'text',
+            content: 'Okay, let’s try a different district. Which area are you interested in?',
+          },
+        ]);
+        break;
   
-
- 
-
+      case 'Increase your max price':
+        setChatStep('price'); // example: return to max price input
+        setMessages(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            type: 'text',
+            content: 'Sure, what’s your updated maximum price?',
+          },
+        ]);
+        break;
+  
+      case 'Change your dates to include weekdays':
+        setChatStep('date');
+        setMessages(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            type: 'text',
+            content: 'Got it. What new dates would you like to try?',
+          },
+        ]);
+        break;
+  
+      case 'Search all of the city instead of a specific area':
+        //setSelectedDistrict('all'); // or whatever value represents “entire city”
+       //---- fetchPropertiesAgain(); // Trigger your search again with wider filter
+        break;
+  
+      default:
+        // Optional fallback
+        break;
+    }
+  };
+  
+  
  const containerRef = useRef<HTMLDivElement>(null);
 
  const [isAtBottom, setIsAtBottom] = useState(true); // Track if the user is at the bottom
 
  useEffect(() => {
-  console.log('🌀 useEffect triggered');
-  console.log('📦 messages.length:', messages.length);
-  console.log('📍 isAtBottom:', isAtBottom);
-  console.log('🔍 containerRef.current:', containerRef.current);
-  console.log('🔚 bottomRef.current:', bottomRef.current);
-
   if (messages.length > 5) {
     if (isAtBottom && containerRef.current && bottomRef.current) {
-      console.log('✅ Conditions met — scrolling to bottom...');
+
       bottomRef.current.scrollIntoView({ behavior: 'smooth' });
     } else {
-      console.log('🚫 Skipping scroll due to one or more conditions failing:');
+
       if (!isAtBottom) console.log('   - User is not at bottom');
       if (!containerRef.current) console.log('   - containerRef is null');
       if (!bottomRef.current) console.log('   - bottomRef is null');
@@ -490,17 +571,6 @@ setTimeout(() => {
     }
   }, []);
 
-  /* useLayoutEffect(() => {
-    if (resetComplete) {
-      setTimeout(() => {
-        if (scrollContainerRef.current) {
-          scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-        setResetComplete(false); // Reset the flag
-      }, 100); // Delay to allow DOM to update
-    }
-  }, [resetComplete]); */
-  
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -513,6 +583,7 @@ setTimeout(() => {
            {messages.map((msg, i) => (
               <MessageItem key={i} msg={msg} 
               handleSuggestedQuestion={handleSuggestedQuestion}
+              handleSuggestionClick={handleSuggestionClick}
                />
             ))}
 
