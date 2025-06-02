@@ -29,15 +29,6 @@ const suggestedQuestions = [
 
 type ChatStep = null | 'district' | 'date' | 'confirmDates' | 'price' | 'done' | 'propertyInsights';
 
-// const districtOptions = [
-//   { name: 'Miraflores', lat: -12.1211, lng: -77.0297 },
-//   { name: 'Barranco', lat: -12.1449, lng: -77.0202 },
-//   { name: 'San Isidro', lat: -12.0972, lng: -77.0369 },
-//   { name: 'Surco', lat: -12.1586, lng: -76.9986 },
-//   { name: 'La Molina', lat: -12.0909, lng: -76.9350 },
-// ];
-
-
 const districtOptions = [
   { name: 'Miraflores', lat: -12.1211, lng: -77.0297 },
   { name: 'Barranco', lat: -12.1449, lng: -77.0202 },
@@ -335,6 +326,36 @@ setTimeout(() => {
       addAssistantMessageOnly(
         `Which district in Lima are you most interested in?`
       );
+      return;
+    }
+
+    // 🔍 Check if Insights API should be called
+  const shouldTriggerInsights =
+  properties && properties.length > 0 && messageText.length > 2;
+
+    if (shouldTriggerInsights) {
+      try {
+        setLoading(true);
+        const insightResponse = await getPropertyInsights(messageText, properties);
+
+        if (
+          insightResponse.filtered_properties &&
+          Array.isArray(insightResponse.filtered_properties) &&
+          insightResponse.filtered_properties.length > 0
+        ) {
+          console.log('Insights API filtered_properties:',  insightResponse.filtered_properties);
+        }
+        const assistantMsg: Message = { role: 'assistant', content: insightResponse.answer };
+        setMessages(prev => [...prev, assistantMsg]);
+      } catch (error) {
+        console.error('Insights API error:', error);
+        setMessages(prev => [
+          ...prev,
+          { role: 'assistant', content: 'Sorry, I had trouble analyzing the properties 😞' },
+        ]);
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 

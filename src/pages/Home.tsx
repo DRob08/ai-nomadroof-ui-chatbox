@@ -6,9 +6,6 @@ import { getAvailableExclusiveProperties } from '../services/propertyService';
 import Community from "../components/Community"; // Add this line
 
 
-
-
-
 const Home = () => {
   const [properties, setProperties] = useState<PropertyModel[]>([]);
 
@@ -46,7 +43,6 @@ const Home = () => {
         <div className="max-w-3xl mx-auto">
           <ChatBox />
         </div>
-        <Community /> {/* Add this line */}
       </div>
     </div>
   );
