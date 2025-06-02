@@ -17,11 +17,11 @@ const Header = () => {
 
         {/* Right: Navigation */}
         <nav className="space-x-6 hidden md:flex">
-          <a href="#" className="text-gray-700 hover:text-blue-600 font-medium">
+          <a href="/" className="text-gray-700 hover:text-blue-600 font-medium">
             Home
           </a>
-          <a href="#" className="text-gray-700 hover:text-blue-600 font-medium">
-            Features
+          <a href="/community" className="text-gray-700 hover:text-blue-600 font-medium">
+            Community
           </a>
           <a href="#" className="text-gray-700 hover:text-blue-600 font-medium">
             Contact
