@@ -6,6 +6,7 @@ import "yet-another-react-lightbox/plugins/thumbnails.css";
 import ContactForm from "../components/ContactForm"
 
 const Community = () => {
+    const [showModal, setShowModal] = useState(false);
   const galleryImages = [
     { src: "/images/community/nomadroof-events-1.png" },
     { src: "/images/community/nomadroof-events-2.png" },
@@ -163,13 +164,28 @@ const Community = () => {
   <p className="text-lg mb-6 italic">
     Booking with us is just the beginning — the real journey starts when you become part of our community.
   </p>
-  <a
-    href="/contact"
-    className="inline-block bg-white text-[#f5694b] px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition"
-  >
-    Join Our Community
-  </a>
+  <button
+  onClick={() => setShowModal(true)}
+  className="inline-block bg-white text-[#f5694b] px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition"
+>
+  Join Our Community
+</button>
 </section>
+
+ {/* Modal */}
+ {showModal && (
+       <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4">
+  <div className="bg-white rounded-xl w-full max-w-md p-6">
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl"
+              onClick={() => setShowModal(false)}
+            >
+              &times;
+            </button>
+            <ContactForm onClose={() => setShowModal(false)} />
+          </div>
+        </div>
+      )}
 
     </div>
   );

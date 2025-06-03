@@ -1,6 +1,9 @@
+import React, { useState } from 'react';
 import { PropertyModel } from '../types/property';
 
 const PropertyCard: React.FC<{ property: PropertyModel }> = ({ property }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const {
     post_title,
     full_thumbnail_url,
@@ -47,9 +50,10 @@ const PropertyCard: React.FC<{ property: PropertyModel }> = ({ property }) => {
   if (closet) amenities.push('Closet');
   if (iron) amenities.push('Iron');
 
+  const truncatedText = about_neighborhood?.slice(0, 150);
+
   return (
     <div className="relative bg-white border border-gray-200 shadow-md rounded-2xl p-4 space-y-2 hover:shadow-lg transition duration-300">
-      
       <a href={`https://www.nomadroof.com/properties/${half_property_url}`} target="_blank" rel="noopener noreferrer" className="block relative">
         {is_prop_featured && (
           <div className="absolute top-2 left-2 bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-md shadow-md z-10">
@@ -64,7 +68,6 @@ const PropertyCard: React.FC<{ property: PropertyModel }> = ({ property }) => {
       </a>
 
       <h3 className="text-lg font-semibold mb-1">{post_title}</h3>
-
       <p className="text-sm text-gray-600">{location}</p>
       <p className="text-lg font-bold text-emerald-600">${property_price_per_month} / Month</p>
       <p className="text-sm mt-1">
@@ -72,7 +75,17 @@ const PropertyCard: React.FC<{ property: PropertyModel }> = ({ property }) => {
       </p>
 
       {about_neighborhood && (
-        <p className="text-sm text-gray-600 mt-2">{about_neighborhood}</p>
+        <div className="text-sm text-gray-600 mt-2">
+          {isExpanded ? about_neighborhood : `${truncatedText}...`}
+          {about_neighborhood.length > 150 && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="ml-2 text-emerald-600 hover:underline"
+            >
+              {isExpanded ? 'Read less' : 'Read more'}
+            </button>
+          )}
+        </div>
       )}
 
       <div className="mt-2 flex flex-wrap gap-2">

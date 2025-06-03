@@ -8,6 +8,7 @@ import PriceRangeSelector from './PriceRangeSelector'; // Import from the same f
 import PropertyCard from './PropertyCard'; // Import from the same folder
 import MessageItem from './MessageItem';
 import TypingIndicator from './TypingIndicator';
+import ContactForm from "./ContactForm"
 import { Console } from 'console';
 
 const MIN = 0;
@@ -68,6 +69,15 @@ const ChatBox: React.FC = () => {
     endDate:string;
   }>(null);
   const [resetComplete, setResetComplete] = useState(false);
+
+  const [showModal, setShowModal] = useState(false);
+
+  // This function will be passed down to MessageItem
+  const handleAction = (action: string) => {
+    if (action === 'open_contact_modal') {
+      setShowModal(true);
+    }
+  };
 
   const formatDateRange = (startMonth: number, endMonth: number): string => {
     const now = new Date();
@@ -459,8 +469,18 @@ setTimeout(() => {
             type: 'text',
             content: `Hmm, I couldn't find any properties that match your criteria right now.\n\nYou might want to try expanding your search area, increasing your price range, or changing the dates.`,
           };
+
+
+          const contactSupportMessage: Message = {
+            role: 'assistant',
+            type: 'action',
+            content: `Would you like us to help you personally?`,
+            data: [
+              { label: 'Contact Support', action: 'open_contact_modal' },
+            ],
+          };
           
-          setMessages(prev => [...prev, noResultsText, noResultsSuggestions]);
+          setMessages(prev => [...prev, noResultsText, noResultsSuggestions, contactSupportMessage ]);
           
           return;
         }
@@ -490,8 +510,23 @@ setTimeout(() => {
       
       } catch (error) {
         console.error('Error fetching properties:', error);
-        addAssistantMessageOnly(`Oops! Something went wrong while searching. Please try again in a moment.`);
-      } finally {
+      
+        const errorMessage: Message = {
+          role: 'assistant',
+          type: 'text',
+          content: `Oops! Something went wrong while searching. Please try again in a moment.`,
+        };
+      
+        const contactSupportMessage: Message = {
+          role: 'assistant',
+          type: 'action',
+          content: `Would you like us to help you personally?`,
+          data: [{ label: 'Connect', action: 'open_contact_modal' }],
+        };
+      
+        setMessages(prev => [...prev, errorMessage, contactSupportMessage]);
+      }
+       finally {
         setIsTyping(false);
         setLoading(false);
       }
@@ -605,8 +640,24 @@ const handleSuggestionClick = (suggestion: string) => {
               <MessageItem key={i} msg={msg} 
               handleSuggestedQuestion={handleSuggestedQuestion}
               handleSuggestionClick={handleSuggestionClick}
+              handleAction={handleAction} //
                />
             ))}
+
+             {/* Modal Contact Form */}
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4">
+          <div className="relative bg-white rounded-xl w-full max-w-md p-6">
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl"
+              onClick={() => setShowModal(false)}
+            >
+              &times;
+            </button>
+            <ContactForm onClose={() => setShowModal(false)} />
+          </div>
+        </div>
+      )}
 
 {messages.length > 0 && (
   <button

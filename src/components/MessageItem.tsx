@@ -1,13 +1,19 @@
 import { Message } from '../types/chat';
 import PropertyCard from './PropertyCard'; // adjust to your actual path
+import React, { useState } from 'react';
 
 interface MessageItemProps {
   msg: Message;
   handleSuggestedQuestion: (question: string) => void;
   handleSuggestionClick?: (suggestion: string) => void; // NEW
+  handleAction?: (action: string) => void; // 👈 Add this
 }
 
-const MessageItem: React.FC<MessageItemProps> = ({ msg, handleSuggestedQuestion, handleSuggestionClick }) => {
+
+
+
+const MessageItem: React.FC<MessageItemProps> = ({ msg, handleSuggestedQuestion, handleSuggestionClick, handleAction }) => {
+
   // Property list rendering
   if (msg.type === 'properties' && Array.isArray(msg.data)) {
     return (
@@ -33,6 +39,21 @@ const MessageItem: React.FC<MessageItemProps> = ({ msg, handleSuggestedQuestion,
       </div>
     );
   }
+
+  if (msg.type === 'action' && msg.data?.length > 0) {
+    return (
+      <div className="mt-2">
+        <p>{msg.content}</p>
+        <button
+          onClick={() => handleAction?.(msg.data[0].action)}
+          className="mt-2 bg-[#f5694b] text-white px-4 py-2 rounded hover:bg-[#f5694b]/80"
+        >
+          {msg.data[0].label}
+        </button>
+      </div>
+    );
+  }
+  
 
   //  // Quick Insights suggestions (new block)
   //  if (msg.type === 'suggestions' && Array.isArray(msg.data)) {
