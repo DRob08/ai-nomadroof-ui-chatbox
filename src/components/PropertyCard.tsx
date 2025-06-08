@@ -30,6 +30,7 @@ const PropertyCard: React.FC<{ property: PropertyModel }> = ({ property }) => {
     iron,
     about_neighborhood,
     half_property_url,
+    washer,
   } = property;
 
   const addressCityOnly = property.property_address?.split(",").slice(1).join(",").trim();
@@ -49,6 +50,7 @@ const PropertyCard: React.FC<{ property: PropertyModel }> = ({ property }) => {
   if (hangers) amenities.push('Hangers');
   if (closet) amenities.push('Closet');
   if (iron) amenities.push('Iron');
+  if (washer) amenities.push('Washer');
 
   const truncatedText = about_neighborhood?.slice(0, 150);
 

@@ -180,30 +180,86 @@ const ChatBox: React.FC = () => {
     } 
 
     // Scroll to top
-setTimeout(() => {
-  scrollContainerRef.current?.scrollIntoView({ behavior: 'smooth' });
-}, 100); 
+    setTimeout(() => {
+      scrollContainerRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100); 
   };
   
   const handleSuggestedQuestion = async (question: string) => {
     setChatStep('propertyInsights');
-  
+    setIsTyping(true); 
     try {
       const insightResponse = await getPropertyInsights(question, properties);
   
-      addAssistantMessage(question, insightResponse.answer || 'No insight available.');
+      let parsedAnswer: any;
+      let isJson = false;
+      let hasContent = false;
   
-      // Scroll to bottom after a slight delay to let React render the new message
-      setTimeout(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+      try {
+        parsedAnswer = JSON.parse(insightResponse.answer);
+        isJson = typeof parsedAnswer === 'object' && parsedAnswer !== null;
+        hasContent = isJson && Object.keys(parsedAnswer).length > 0;
+      } catch (e) {
+        isJson = false;
+      }
+
+      console.log('Is resposnJson handleSuggestedQuestion',  isJson);
+      const fallbackMessage: Message = {
+        role: 'assistant',
+        type: 'text',
+        content: 'Sorry, I couldn’t find any insights for that question. Would you like personal assistance?',
+      };
+  
+      const contactSupportMessage: Message = {
+        role: 'assistant',
+        type: 'action',
+        content: `Request personal assistance here`,
+        data: [
+          { label: 'Contact Support', action: 'open_contact_modal' },
+        ],
+      };
+  
+      if (!insightResponse.answer && !hasContent) {
+        // Empty or invalid insight, show fallback + support
+        setMessages(prev => [
+          ...prev,
+          { role: 'user', type: 'text', content: question },
+          fallbackMessage,
+          contactSupportMessage,
+        ]);
+      } else {
+        // Show valid answer
+        addAssistantMessage(question, insightResponse.answer);
+      }
+  
     } catch (err) {
-      addAssistantMessage(question, 'Something went wrong fetching insights.');
+      // On API error
+      const errorMessage: Message = {
+        role: 'assistant',
+        type: 'text',
+        content: 'Something went wrong while fetching insights. Please try again or contact support.',
+      };
   
-      setTimeout(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+      const contactSupportMessage: Message = {
+        role: 'assistant',
+        type: 'action',
+        content: `Would you like us to help you personally?`,
+        data: [
+          { label: 'Contact Support', action: 'open_contact_modal' },
+        ],
+      };
+  
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', type: 'text', content: question },
+        errorMessage,
+        contactSupportMessage,
+      ]);
     }
+  
+    setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   };
   
   const addAssistantMessage = (userSelection: string, assistantMessage: string, delay = 1000) => {
@@ -254,72 +310,48 @@ setTimeout(() => {
   const sendMessage = async (content?: string) => {
     const messageText = content ?? input.trim();
     if (!messageText) return;
-
+  
     const userMsg: Message = { role: 'user', content: messageText };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
-
+  
+    // ✅ Date Confirmation Flow
     if (awaitingDateConfirmation) {
       const answer = messageText.toLowerCase();
+  
       if (answer.includes('yes') || answer.includes('correct')) {
         setBookingDetails(prev => ({
           ...prev,
           dates: awaitingDateConfirmation.proposedDateRange,
           startDate: awaitingDateConfirmation.startDate,
-          endDate: awaitingDateConfirmation.startDate
-          //need to update dates here start and end date
-
+          endDate: awaitingDateConfirmation.startDate,
         }));
         setAwaitingDateConfirmation(null);
         setChatStep('price');
-      
-        addAssistantMessageOnly('Thanks for confirming! What is your preferred price range? (e.g. $50–$100)');
-        return;
+  
+        setIsTyping(true);
+        setTimeout(() => {
+          setMessages(prev => [
+            ...prev,
+            { role: 'assistant', content: 'Thanks for confirming! What is your preferred price range? (e.g. $50–$100)' }
+          ]);
+          setIsTyping(false);
+        }, 1000);
       } else {
         setAwaitingDateConfirmation(null);
-       
-        addAssistantMessageOnly('No problem. Please select a different date range:');
-        return;
+        setIsTyping(true);
+        setTimeout(() => {
+          setMessages(prev => [
+            ...prev,
+            { role: 'assistant', content: 'No problem. Please select a different date range:' }
+          ]);
+          setIsTyping(false);
+        }, 1000);
       }
-    }
-
-   /*  if (chatStep === 'price') {
-      const updatedBookingDetails = {
-        ...bookingDetails,
-        priceRange: messageText,
-      };
-      setBookingDetails(updatedBookingDetails);
-      setChatStep('done');
-    
-      addAssistantMessageOnly(
-        `Thanks! Here's what I found based on your criteria:\n\n📍 Location: ${updatedBookingDetails.city}, ${updatedBookingDetails.district}\n📅 Dates: ${updatedBookingDetails.dates}\n💵 Price Range: ${updatedBookingDetails.priceRange}\n\n(Showing search results...)`
-      );
-    
-      const fetchProperties = async () => {
-        try {
-          setLoading(true);
-          const response = await getProperties({
-            city: updatedBookingDetails.city,
-            district: updatedBookingDetails.district,
-            dates: updatedBookingDetails.dates,
-            startDate:updatedBookingDetails.startDate,
-            endDate:updatedBookingDetails.endDate,
-            priceRange: updatedBookingDetails.priceRange,
-            districtCoordinates : updatedBookingDetails.districtCoordinates,
-          });
-          setProperties(response);
-        } catch (error) {
-          console.error('Error fetching properties:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
-    
-      fetchProperties();
       return;
-    } */
-    
-    
+    }
+  
+    // ✅ Trigger district selection flow
     if (messageText.toLowerCase().includes('properties in lima')) {
       setBookingDetails({
         city: 'Lima',
@@ -329,65 +361,100 @@ setTimeout(() => {
         startDate: '',
         endDate: '',
         priceRange: '',
-        minPrice:'',
-        maxPrice:'',
+        minPrice: '',
+        maxPrice: '',
       });
       setChatStep('district');
-      addAssistantMessageOnly(
-        `Which district in Lima are you most interested in?`
-      );
-      return;
-    }
-
-    // 🔍 Check if Insights API should be called
-  const shouldTriggerInsights =
-  properties && properties.length > 0 && messageText.length > 2;
-
-    if (shouldTriggerInsights) {
-      try {
-        setLoading(true);
-        const insightResponse = await getPropertyInsights(messageText, properties);
-
-        if (
-          insightResponse.filtered_properties &&
-          Array.isArray(insightResponse.filtered_properties) &&
-          insightResponse.filtered_properties.length > 0
-        ) {
-          console.log('Insights API filtered_properties:',  insightResponse.filtered_properties);
-        }
-        const assistantMsg: Message = { role: 'assistant', content: insightResponse.answer };
-        setMessages(prev => [...prev, assistantMsg]);
-      } catch (error) {
-        console.error('Insights API error:', error);
+  
+      setIsTyping(true);
+      setTimeout(() => {
         setMessages(prev => [
           ...prev,
-          { role: 'assistant', content: 'Sorry, I had trouble analyzing the properties 😞' },
+          { role: 'assistant', content: 'Which district in Lima are you most interested in?' }
         ]);
-      } finally {
-        setLoading(false);
-      }
+        setIsTyping(false);
+      }, 1000);
       return;
     }
-
-    // Fallback API call
-    try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [...messages, userMsg] }),
-      });
-
-      const data = await res.json();
-      const assistantMsg: Message = { role: 'assistant', content: data.reply };
-      setMessages(prev => [...prev, assistantMsg]);
-    } catch (error) {
-      console.error('API error:', error);
+  
+    // ✅ Property Insights Flow
+    const shouldTriggerInsights = properties && properties.length > 0 && messageText.length > 2;
+  
+    if (shouldTriggerInsights) {
+      setIsTyping(true);
+      try {
+        const insightResponse = await getPropertyInsights(messageText, properties);
+  
+        let parsedAnswer: any;
+        let isJson = false;
+        let hasContent = false;
+  
+        try {
+          parsedAnswer = JSON.parse(insightResponse.answer);
+          isJson = typeof parsedAnswer === 'object' && parsedAnswer !== null;
+          hasContent = isJson && Object.keys(parsedAnswer).length > 0;
+        } catch (e) {
+          isJson = false;
+        }
+  
+        if (!insightResponse.answer || !hasContent) {
+          const fallbackMsg: Message = {
+            role: 'assistant',
+            type: 'text',
+            content: 'Sorry, I couldn’t find any insights for that question. Would you like personal assistance?',
+          };
+  
+          const supportMsg: Message = {
+            role: 'assistant',
+            type: 'action',
+            content: `Request personal assistance here`,
+            data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
+          };
+  
+          setMessages(prev => [...prev, fallbackMsg, supportMsg]);
+        } else {
+          const assistantMsg: Message = { role: 'assistant', content: insightResponse.answer };
+          setMessages(prev => [...prev, assistantMsg]);
+        }
+      } catch (error) {
+        console.error('Insights API error:', error);
+  
+        const errorMsg: Message = {
+          role: 'assistant',
+          type: 'text',
+          content: 'Something went wrong while fetching insights. Please try again or contact support.',
+        };
+  
+        const supportMsg: Message = {
+          role: 'assistant',
+          type: 'action',
+          content: `Would you like us to help you personally?`,
+          data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
+        };
+  
+        setMessages(prev => [...prev, errorMsg, supportMsg]);
+      } finally {
+        setIsTyping(false);
+        setTimeout(() => {
+          bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+  
+      return;
+    }
+  
+    // 🧼 Default fallback assistant message
+    setIsTyping(true);
+    setTimeout(() => {
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', content: 'Error talking to AI 😞' },
+        { role: 'assistant', content: "I'm here to help! Could you please rephrase or clarify your request?" }
       ]);
-    }
+      setIsTyping(false);
+    }, 1000);
   };
+  
+  
 
   const handleQuickResponse = (response: 'yes' | 'no') => {
     sendMessage(response);

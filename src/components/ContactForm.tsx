@@ -1,5 +1,5 @@
-// src/components/ContactForm.tsx
 import React, { useState } from "react";
+import { submitContactForm } from "../services/contactService";
 
 const ContactForm = ({ onClose }: { onClose?: () => void }) => {
   const [formData, setFormData] = useState({
@@ -9,6 +9,10 @@ const ContactForm = ({ onClose }: { onClose?: () => void }) => {
     message: "",
   });
 
+  const [loading, setLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusType, setStatusType] = useState<"success" | "error" | null>(null);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -17,22 +21,36 @@ const ContactForm = ({ onClose }: { onClose?: () => void }) => {
   };
 
   const isValidWhatsAppNumber = (number: string) => {
-    const regex = /^\+\d{10,15}$/; // Basic international format: +1234567890
+    const regex = /^\+\d{10,15}$/;
     return regex.test(number);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setStatusMessage(null);
 
     if (!isValidWhatsAppNumber(formData.whatsapp)) {
-      alert(
-        "Please enter a valid WhatsApp number in international format (e.g. +1234567890)"
-      );
+      setStatusType("error");
+      setStatusMessage("Please enter a valid WhatsApp number (e.g. +1234567890).");
       return;
     }
 
-    console.log("Form submitted:", formData);
-    if (onClose) onClose();
+    setLoading(true);
+    try {
+      const response = await submitContactForm(formData);
+      setStatusType("success");
+      setStatusMessage("✅ Your message was sent successfully!");
+      setFormData({ name: "", email: "", whatsapp: "", message: "" }); // reset form
+      if (onClose) {
+        setTimeout(() => onClose(), 2000); // auto-close after 2s if modal
+      }
+    } catch (error: any) {
+      console.error("Error submitting contact form:", error);
+      setStatusType("error");
+      setStatusMessage(error.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -43,6 +61,18 @@ const ContactForm = ({ onClose }: { onClose?: () => void }) => {
       <p className="text-sm text-gray-600 text-center mb-4">
         Connect with us via WhatsApp or email — we’re here to help!
       </p>
+
+      {statusMessage && (
+        <div
+          className={`text-sm mb-4 px-4 py-2 rounded ${
+            statusType === "success"
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          }`}
+        >
+          {statusMessage}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <input
@@ -80,12 +110,14 @@ const ContactForm = ({ onClose }: { onClose?: () => void }) => {
           required
           className="w-full border border-gray-300 rounded-lg px-4 py-2 h-24 text-sm"
         />
+
         <div className="flex justify-between items-center pt-2">
           <button
             type="submit"
-            className="bg-[#f5694b] text-white px-6 py-2 rounded-full hover:bg-[#e2563e] transition text-sm"
+            disabled={loading}
+            className="bg-[#f5694b] text-white px-6 py-2 rounded-full hover:bg-[#e2563e] transition text-sm disabled:opacity-50"
           >
-            Send
+            {loading ? "Sending..." : "Send"}
           </button>
           {onClose && (
             <button

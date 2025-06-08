@@ -37,6 +37,7 @@ export interface PropertyModel {
     hangers?: boolean;
     closet?: boolean;
     iron?: boolean;
+    washer?: boolean;
     is_prop_featured?: boolean;
   }
   
