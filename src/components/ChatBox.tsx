@@ -71,6 +71,8 @@ const ChatBox: React.FC = () => {
   const [resetComplete, setResetComplete] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
+  // ISO format function — always outputs 'YYYY-MM-DD'
+  const formatISODate = (d: Date): string => d.toISOString().split('T')[0];
 
   // This function will be passed down to MessageItem
   const handleAction = (action: string) => {
@@ -79,7 +81,7 @@ const ChatBox: React.FC = () => {
     }
   };
 
-  const formatDateRange = (startMonth: number, endMonth: number): string => {
+  const formatDateRange2 = (startMonth: number, endMonth: number): string => {
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
@@ -92,50 +94,104 @@ const ChatBox: React.FC = () => {
     return `${format(start)} to ${format(end)}`;
   };
 
-  const handleDateSelection = (range: 'spring' | 'fall') => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
-
-    const [startMonth, endMonth] = range === 'spring' ? [3, 7] : [8, 12];
-    const isPast = currentMonth > startMonth;
-    const year = isPast ? currentYear + 1 : currentYear;
-    const dateRange = formatDateRange(startMonth, endMonth);
-
+  // Make sure the date range string also uses ISO dates
+  const formatDateRange = (startMonth: number, endMonth: number, year: number): string => {
     const start = new Date(year, startMonth - 1, 1);
     const end = new Date(year, endMonth, 0);
-
-    const format = (d: Date) => d.toLocaleDateString('en-CA');
-
-    if (isPast) {
-      //setAwaitingDateConfirmation({ range, proposedDateRange: dateRange });
-      setAwaitingDateConfirmation({
-        range,
-        proposedDateRange: `${format(start)} to ${format(end)}`,
-        startDate: format(start),
-        endDate: format(end),
-      });
-    
-      addAssistantMessageOnly(
-        `It looks like the ${range === 'spring' ? 'March to July' : 'August to December'} semester is in the past for this year. Did you mean to plan for ${year}?`
-      );
-      
-      return;
-    }
-
-    setBookingDetails(prev => ({
-      ...prev,
-      startDate: format(start),
-      endDate: format(end),
-      dates: dateRange,
-    }));
-    
-    setChatStep('price');
-    addAssistantMessage(
-      range === 'spring' ? 'March to July' : 'August to December' ,
-     `Got it! What is your preferred price range? (e.g. $50–$100)`
-   );
+    return `${formatISODate(start)} to ${formatISODate(end)}`;
   };
+
+  // const handleDateSelection = (range: 'spring' | 'fall') => {
+  //   const now = new Date();
+  //   const currentYear = now.getFullYear();
+  //   const currentMonth = now.getMonth() + 1;
+
+  //   const [startMonth, endMonth] = range === 'spring' ? [3, 7] : [8, 12];
+  //   const isPast = currentMonth > startMonth;
+  //   const year = isPast ? currentYear + 1 : currentYear;
+  //   const dateRange = formatDateRange(startMonth, endMonth);
+
+  //   const start = new Date(year, startMonth - 1, 1);
+  //   const end = new Date(year, endMonth, 0);
+
+  //   const format = (d: Date) => d.toLocaleDateString('en-CA');
+
+  //   if (isPast) {
+  //     //setAwaitingDateConfirmation({ range, proposedDateRange: dateRange });
+  //     setAwaitingDateConfirmation({
+  //       range,
+  //       proposedDateRange: `${format(start)} to ${format(end)}`,
+  //       startDate: format(start),
+  //       endDate: format(end),
+  //     });
+    
+  //     addAssistantMessageOnly(
+  //       `It looks like the ${range === 'spring' ? 'March to July' : 'August to December'} semester is in the past for this year. Did you mean to plan for ${year}?`
+  //     );
+      
+  //     return;
+  //   }
+
+  //   setBookingDetails(prev => ({
+  //     ...prev,
+  //     startDate: format(start),
+  //     endDate: format(end),
+  //     dates: dateRange,
+  //   }));
+    
+  //   setChatStep('price');
+  //   addAssistantMessage(
+  //     range === 'spring' ? 'March to July' : 'August to December' ,
+  //    `Got it! What is your preferred price range? (e.g. $50–$100)`
+  //  );
+  // };
+    const handleDateSelection = (range: 'spring' | 'fall') => {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+    
+      const [startMonth, endMonth] = range === 'spring' ? [3, 7] : [8, 12];
+      const isPast = currentMonth > startMonth;
+      const year = isPast ? currentYear + 1 : currentYear;
+    
+      const start = new Date(year, startMonth - 1, 1);
+      const end = new Date(year, endMonth, 0);
+    
+      const formattedStart = formatISODate(start);
+      const formattedEnd = formatISODate(end);
+      const dateRange = formatDateRange(startMonth, endMonth, year);
+    
+      if (isPast) {
+        setAwaitingDateConfirmation({
+          range,
+          proposedDateRange: dateRange,
+          startDate: formattedStart,
+          endDate: formattedEnd,
+        });
+    
+        addAssistantMessageOnly(
+          `It looks like the ${range === 'spring' ? 'March to July' : 'August to December'} semester is in the past for this year. Did you mean to plan for ${year}?`
+        );
+    
+        return;
+      }
+    
+      setBookingDetails(prev => ({
+        ...prev,
+        startDate: formattedStart,
+        endDate: formattedEnd,
+        dates: dateRange,
+      }));
+
+      console.log("Booking details before request", bookingDetails);
+    
+      setChatStep('price');
+      addAssistantMessage(
+        range === 'spring' ? 'March to July' : 'August to December',
+        `Got it! What is your preferred price range? (e.g. $50–$100)`
+      );
+    };
+  
 
   const resetChat = () => {
     setMessages([]);
@@ -324,7 +380,7 @@ const ChatBox: React.FC = () => {
           ...prev,
           dates: awaitingDateConfirmation.proposedDateRange,
           startDate: awaitingDateConfirmation.startDate,
-          endDate: awaitingDateConfirmation.startDate,
+          endDate: awaitingDateConfirmation.endDate,
         }));
         setAwaitingDateConfirmation(null);
         setChatStep('price');
@@ -465,12 +521,23 @@ const ChatBox: React.FC = () => {
   };
 
   const handleConfirmPrice = () => {
+    // const updatedBookingDetails = {
+    //   ...bookingDetails,
+    //   minPrice: pricesRange[0].toString(),
+    //   maxPrice: pricesRange[1].toString(),
+    //   priceRange: `${pricesRange[0]}-${pricesRange[1]}`,
+    // };
+
     const updatedBookingDetails = {
       ...bookingDetails,
       minPrice: pricesRange[0].toString(),
       maxPrice: pricesRange[1].toString(),
       priceRange: `${pricesRange[0]}-${pricesRange[1]}`,
+      startDate: bookingDetails.startDate,  // <-- explicitly include
+      endDate: bookingDetails.endDate,      // <-- explicitly include
     };
+    
+    console.log('Updated Booking Details:', updatedBookingDetails);
   
     setBookingDetails(updatedBookingDetails);
   

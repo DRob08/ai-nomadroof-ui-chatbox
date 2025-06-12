@@ -7,7 +7,8 @@ type Props = {
 
 const ExclusiveSidebar: React.FC<Props> = ({ properties }) => {
   return (
-    <aside className="w-64 h-screen sticky top-0 bg-white shadow-md p-4 overflow-y-auto border-r border-gray-200">
+    <aside className="w-full md:w-64 md:h-screen md:sticky md:top-0 bg-white shadow-md p-4 overflow-y-auto md:border-r md:border-gray-200 border-none">
+
       <h2 className="text-lg font-semibold mb-4 text-gray-800">🌟 Exclusive Properties</h2>
       {properties.map((property) => (
         <div
