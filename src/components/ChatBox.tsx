@@ -10,6 +10,13 @@ import TypingIndicator from './TypingIndicator';
 import ContactForm from "./ContactForm"
 import { ChatProperty } from '../types/chat';
 import { useChatFlow } from '../hooks/useChatFlow';
+import {
+  formatISODate,
+  formatDateRange,
+  sanitizeAnswer,
+  isChatPropertyArray,
+} from '../utils/chatUtils';
+import ChatConvoPanel from './ChatConvoPanel'; // adjust path if needed
 
 const MIN = 0;
 const MAX = 1000;
@@ -17,7 +24,7 @@ const STEP = 10;
 
 const initialSuggestions = [
   'Search for properties in Lima',
-  'I need General Information',
+  'General Information',
   'Show me exclusive Properties only',
 ];
 
@@ -40,6 +47,12 @@ const districtOptions = [
 ];
 
 const ChatBox: React.FC = () => {
+
+  const generalFAQSuggestions = [
+  'How do I book?',
+  'Can I contact the landlord?',
+  'How do I reserve my flat?',
+  ];
   // const [messages, setMessages] = useState<Message[]>([]);
   // const [input, setInput] = useState('');
   // const [chatStep, setChatStep] = useState<ChatStep>(null);
@@ -98,7 +111,6 @@ const ChatBox: React.FC = () => {
     bottomRef,
     containerRef,
     sendMessage, 
-    formatISODate,
   } = useChatFlow();
   
 
@@ -158,13 +170,13 @@ const ChatBox: React.FC = () => {
   };
 
   // Make sure the date range string also uses ISO dates
-  const formatDateRange = (startMonth: number, endMonth: number, year: number): string => {
-    const start = new Date(year, startMonth - 1, 1);
-    const end = new Date(year, endMonth, 0);
-    return `${formatISODate(start)} to ${formatISODate(end)}`;
-  };
+  // const formatDateRange = (startMonth: number, endMonth: number, year: number): string => {
+  //   const start = new Date(year, startMonth - 1, 1);
+  //   const end = new Date(year, endMonth, 0);
+  //   return `${formatISODate(start)} to ${formatISODate(end)}`;
+  // };
 
-   const handleDateSelection = (range: 'spring' | 'fall') => {
+  const handleDateSelection = (range: 'spring' | 'fall') => {
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1;
@@ -209,7 +221,7 @@ const ChatBox: React.FC = () => {
         range === 'spring' ? 'March to July' : 'August to December',
         `Got it! What is your preferred price range? (e.g. $50–$100)`
       );
-    };
+  };
   
   const resetChat = () => {
     setMessages([]);
@@ -259,93 +271,6 @@ const ChatBox: React.FC = () => {
     }, 100); 
   };
   
-  const handleSuggestedQuestion = async (question: string) => {
-    setChatStep('propertyInsights');
-    setIsTyping(true);
-  
-    const fallbackSupportMessages: Message[] = [
-      {
-        role: 'assistant',
-        type: 'text',
-        content: 'Sorry, we couldn’t find anything useful for that. Would you like personal assistance?',
-      },
-      {
-        role: 'assistant',
-        type: 'action',
-        content: 'Request personal assistance here',
-        data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
-      },
-    ];
-  
-    try {
-      const insightResponse = await getPropertyInsights(question, properties);
-      const raw = insightResponse.answer?.trim();
-  
-      // Track user question
-      setMessages(prev => [
-        ...prev,
-        { role: 'user', type: 'text', content: question },
-      ]);
-  
-      if (!raw) {
-        setMessages(prev => [...prev, ...fallbackSupportMessages]);
-        return;
-      }
-  
-      let parsed: any;
-      try {
-        const sanitized = sanitizeAnswer(raw);
-        parsed = JSON.parse(sanitized);
-       //parsed = JSON.parse(raw);
-  
-        if (isChatPropertyArray(parsed)) {
-          setMessages(prev => [
-            ...prev,
-            {
-              role: 'assistant',
-              type: 'chatProperties',
-              content: '',
-              data: parsed,
-            },
-          ]);
-          return;
-        }
-      } catch (err) {
-        console.warn('Invalid JSON in insight answer:', err);
-      }
-  
-      // Fallback to plain text if not valid JSON/chat properties
-      setMessages(prev => [
-        ...prev,
-        {
-          role: 'assistant',
-          type: 'text',
-          content: raw,
-        },
-      ]);
-    } catch (err) {
-      console.error('handleSuggestedQuestion error:', err);
-  
-      setMessages(prev => [
-        ...prev,
-        { role: 'user', type: 'text', content: question },
-        {
-          role: 'assistant',
-          type: 'text',
-          content: 'We encountered a technical issue. Would you like help from our team?',
-        },
-        {
-          role: 'assistant',
-          type: 'action',
-          content: 'Request personal assistance here',
-          data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
-        },
-      ]);
-    } finally {
-      setIsTyping(false);
-    }
-  };
-  
   const addAssistantMessage = (userSelection: string, assistantMessage: string, delay = 1000) => {
     setIsTyping(true);
     setTimeout(() => {
@@ -383,32 +308,32 @@ const ChatBox: React.FC = () => {
     );
   };
 
-  function isChatPropertyArray(data: any): data is ChatProperty[] {
-    return (
-      Array.isArray(data) &&
-      data.every((item) =>
-        typeof item.title === 'string' &&
-        typeof item.price === 'number' || typeof item.price === 'string' &&
+  // function isChatPropertyArray(data: any): data is ChatProperty[] {
+  //   return (
+  //     Array.isArray(data) &&
+  //     data.every((item) =>
+  //       typeof item.title === 'string' &&
+  //       typeof item.price === 'number' || typeof item.price === 'string' &&
 
-        typeof item.rooms === 'number' &&
-        Array.isArray(item.amenities) &&
-        typeof item.url === 'string' &&
-        typeof item.location === 'object' &&
-        typeof item.location.district === 'string' &&
-        typeof item.location.city === 'string' &&
-        typeof item.location.country === 'string'
-      )
-    );
-  }
+  //       typeof item.rooms === 'number' &&
+  //       Array.isArray(item.amenities) &&
+  //       typeof item.url === 'string' &&
+  //       typeof item.location === 'object' &&
+  //       typeof item.location.district === 'string' &&
+  //       typeof item.location.city === 'string' &&
+  //       typeof item.location.country === 'string'
+  //     )
+  //   );
+  // }
 
-  function sanitizeAnswer(answer: string): string {
-    return answer
-      .trim()
-      .replace(/^```json/i, '')
-      .replace(/^```/, '')
-      .replace(/```$/, '')
-      .trim();
-  }
+  // function sanitizeAnswer(answer: string): string {
+  //   return answer
+  //     .trim()
+  //     .replace(/^```json/i, '')
+  //     .replace(/^```/, '')
+  //     .replace(/```$/, '')
+  //     .trim();
+  // }
 
   // const sendMessage = async (content?: string) => {
   //   const messageText = content ?? input.trim();
@@ -772,36 +697,146 @@ const ChatBox: React.FC = () => {
         break;
     }
   };
+
+  const handleSuggestedQuestion = async (question: string) => {
+
+    // ✅ Check for "General Information"
+  if (question.toLowerCase() === 'general information') {
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', type: 'text', content: question },
+      {
+        role: 'assistant',
+        type: 'text',
+        content: 'Sure! What would you like to know about?',
+      },
+    ]);
+
+    setChatStep('faqIntro'); // Used to trigger FAQ follow-ups in JSX
+    return; // ✅ Exit early — skip the rest of this function
+  }
+    setChatStep('propertyInsights');
+    setIsTyping(true);
+  
+    const fallbackSupportMessages: Message[] = [
+      {
+        role: 'assistant',
+        type: 'text',
+        content: 'Sorry, we couldn’t find anything useful for that. Would you like personal assistance?',
+      },
+      {
+        role: 'assistant',
+        type: 'action',
+        content: 'Request personal assistance here',
+        data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
+      },
+    ];
+  
+    try {
+      const insightResponse = await getPropertyInsights(question, properties);
+      const raw = insightResponse.answer?.trim();
+  
+      // Track user question
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', type: 'text', content: question },
+      ]);
+  
+      if (!raw) {
+        setMessages(prev => [...prev, ...fallbackSupportMessages]);
+        return;
+      }
+  
+      let parsed: any;
+      try {
+        const sanitized = sanitizeAnswer(raw);
+        parsed = JSON.parse(sanitized);
+       //parsed = JSON.parse(raw);
+  
+        if (isChatPropertyArray(parsed)) {
+          setMessages(prev => [
+            ...prev,
+            {
+              role: 'assistant',
+              type: 'chatProperties',
+              content: '',
+              data: parsed,
+            },
+          ]);
+          return;
+        }
+      } catch (err) {
+        console.warn('Invalid JSON in insight answer:', err);
+      }
+  
+      // Fallback to plain text if not valid JSON/chat properties
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          type: 'text',
+          content: raw,
+        },
+      ]);
+    } catch (err) {
+      console.error('handleSuggestedQuestion error:', err);
+  
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', type: 'text', content: question },
+        {
+          role: 'assistant',
+          type: 'text',
+          content: 'We encountered a technical issue. Would you like help from our team?',
+        },
+        {
+          role: 'assistant',
+          type: 'action',
+          content: 'Request personal assistance here',
+          data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
+        },
+      ]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const handleFAQFollowUp = (question: string) => {
+    setChatStep('moreInfo'); 
+  // Log the user's FAQ follow-up question
+  setMessages(prev => [
+    ...prev,
+    { role: 'user', type: 'text', content: question },
+  ]);
+
+  // Define answers for each FAQ option
+  const faqAnswers: Record<string, string> = {
+    'How do I book?': 'Booking is easy! Just search for your desired property, select your stay dates, and follow the booking steps. Need help? We’re here!',
+    'Can I contact the landlord?': 'You’ll be able to contact the landlord after your booking is confirmed, or message them if the property allows pre-booking contact.',
+    'How do I reserve my flat?': 'To reserve a flat, start by selecting your dates, location, and budget. Once you find a match, proceed to confirm your booking.',
+    // Add more as needed
+  };
+
+  const answer = faqAnswers[question] ?? "That's a great question! Let us get back to you with more details.";
+
+  setMessages(prev => [
+    ...prev,
+    {
+      role: 'assistant',
+      type: 'text',
+      content: answer,
+    },
+  ]);
+
+  // Optional: reset chatStep or keep in FAQ mode for multiple questions
+  // setChatStep(''); 
+};
+
   
   return (
     <div ref={scrollContainerRef}  className="flex flex-col h-screen p-4 relative">
          {/*    <div ref={scrollContainerRef} /> */}
       <div ref={containerRef} className="flex-1 overflow-y-auto space-y-4 pr-4 scrollbar-thin scrollbar-thumb-gray-400">
-
-          <>
-           {messages.map((msg, i) => (
-              <MessageItem key={i} msg={msg} 
-              handleSuggestedQuestion={handleSuggestedQuestion}
-              handleSuggestionClick={handleSuggestionClick}
-              handleAction={handleAction} //
-               />
-            ))}
-
-             {/* Modal Contact Form */}
-      {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4">
-          <div className="relative bg-white rounded-xl w-full max-w-md p-6">
-            <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl"
-              onClick={() => setShowModal(false)}
-            >
-              &times;
-            </button>
-            <ContactForm onClose={() => setShowModal(false)} />
-          </div>
-        </div>
-      )}
-
           {messages.length > 0 && (
             <button
               onClick={resetChat}
@@ -811,79 +846,30 @@ const ChatBox: React.FC = () => {
             </button>
           )}
 
-            {messages.length === 1 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {initialSuggestions.map((text, i) => (
-                  <button
-                    key={i}
-                    onClick={() => sendMessage(text)}
-                    className="bg-[#f5694b]/10 hover:bg-[#f5694b]/20 text-sm text-[#f5694b] px-4 py-2 rounded-lg border border-[#f5694b]"
-                  >
-                    {text}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {isTyping && <TypingIndicator />}
-
-            {chatStep === 'district' && !isTyping && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {districtOptions.map((d, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleDistrictSelection(d.name)}
-                    className="bg-purple-100 hover:bg-purple-200 text-sm text-purple-800 px-4 py-2 rounded-lg border border-purple-400"
-                  >
-                    {d.name}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {chatStep === 'date' && !awaitingDateConfirmation && !isTyping && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                <button
-                  onClick={() => handleDateSelection('spring')}
-                  className="bg-blue-100 hover:bg-blue-200 text-sm text-blue-800 px-4 py-2 rounded-lg border border-blue-400"
-                >
-                  March to July
-                </button>
-                <button
-                  onClick={() => handleDateSelection('fall')}
-                  className="bg-green-100 hover:bg-green-200 text-sm text-green-800 px-4 py-2 rounded-lg border border-green-400"
-                >
-                  August to December
-                </button>
-              </div>
-            )}
-
-          {chatStep === 'price' && !isTyping && (
-            <PriceRangeSelector
-            pricesRange={pricesRange}
-            setPriceRange={setPriceRange}
-            handleConfirmPrice={handleConfirmPrice}
-          />
-          )}
-
-            {awaitingDateConfirmation && !isTyping  &&  (
-              <div className="flex gap-2 mt-2">
-                <button
-                  onClick={() => handleQuickResponse('yes')}
-                  className="bg-green-100 hover:bg-green-200 text-green-800 px-4 py-2 text-sm rounded-lg border border-green-400"
-                >
-                  Yes
-                </button>
-                <button
-                  onClick={() => handleQuickResponse('no')}
-                  className="bg-red-100 hover:bg-red-200 text-red-800 px-4 py-2 text-sm rounded-lg border border-red-400"
-                >
-                  No
-                </button>
-              </div>
-            )}
-             <div ref={bottomRef} /> 
-          </>
+        <ChatConvoPanel
+          messages={messages}
+          showModal={showModal}
+          setShowModal={setShowModal}
+          handleSuggestedQuestion={handleSuggestedQuestion}
+          handleSuggestionClick={handleSuggestionClick}
+          handleAction={handleAction}
+          resetChat={resetChat}
+          isTyping={isTyping}
+          chatStep={chatStep}
+          districtOptions={districtOptions}
+          handleDistrictSelection={handleDistrictSelection}
+          handleDateSelection={handleDateSelection}
+          awaitingDateConfirmation={awaitingDateConfirmation}
+          handleQuickResponse={handleQuickResponse}
+          generalFAQSuggestions={generalFAQSuggestions}
+          handleFAQFollowUp={handleFAQFollowUp}
+          pricesRange={pricesRange}
+          setPriceRange={setPriceRange}
+          handleConfirmPrice={handleConfirmPrice}
+          sendMessage={sendMessage}
+          initialSuggestions={initialSuggestions}
+          bottomRef={bottomRef}
+      />
         
       </div>
 
@@ -899,16 +885,16 @@ const ChatBox: React.FC = () => {
       </div>
     )}
 
-{showScrollButton && (
-  <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10">
-    <button
-      onClick={scrollToBottom}
-      className="bg-[#f5694b] text-white px-4 py-2 rounded shadow hover:bg-[#e0583e] text-sm transition"
-    >
-      Catch Up
-    </button>
-  </div>
-)}
+      {showScrollButton && (
+        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10">
+          <button
+            onClick={scrollToBottom}
+            className="bg-[#f5694b] text-white px-4 py-2 rounded shadow hover:bg-[#e0583e] text-sm transition"
+          >
+            Catch Up
+          </button>
+        </div>
+      )}
 
       <div className="flex mt-4">
         <input

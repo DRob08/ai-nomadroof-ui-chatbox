@@ -29,5 +29,17 @@ export type ChatStep =
   | 'confirmDates'
   | 'price'
   | 'done'
-  | 'propertyInsights';
+  | 'propertyInsights'
+  | 'faqIntro'
+  | 'moreInfo';
+
+
+  // src/types/chat.ts (or similar)
+export type AwaitingDateConfirmation = {
+  range: 'spring' | 'fall';
+  proposedDateRange: string;
+  startDate: string;
+  endDate: string;
+} | null;
+
 

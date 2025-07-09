@@ -43,8 +43,6 @@ export function useChatFlow() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Utility function
-  const formatISODate = (d: Date): string => d.toISOString().split('T')[0];
 
    const sendMessage = async (content?: string) => {
       const messageText = content ?? input.trim();
@@ -250,8 +248,6 @@ export function useChatFlow() {
     bottomRef,
     containerRef,
 
-    // utils
-    formatISODate,
     sendMessage, 
   };
 }

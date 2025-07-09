@@ -2,6 +2,15 @@
 
 import { ChatProperty } from '../types/chat';
 
+export const formatISODate = (d: Date): string => d.toISOString().split('T')[0];
+
+export const formatDateRange = (startMonth: number, endMonth: number, year: number): string => {
+  const start = new Date(year, startMonth - 1, 1);
+  const end = new Date(year, endMonth, 0);
+  return `${formatISODate(start)} to ${formatISODate(end)}`;
+};
+
+
 export function isChatPropertyArray(data: any): data is ChatProperty[] {
   return (
     Array.isArray(data) &&
