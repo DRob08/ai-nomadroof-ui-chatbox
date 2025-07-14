@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { Message, ChatStep} from '../types/chat';
 import { PropertyModel } from '../types/property';
 import { getPropertyInsights } from '../services/aiService';
+import { getFAQAnswer } from '../services/faqsService';
 import { isChatPropertyArray, sanitizeAnswer } from '../utils/chatUtils';
 
 export function useChatFlow() {
@@ -122,6 +123,57 @@ export function useChatFlow() {
         }, 1000);
         return;
       }
+
+      // ✅ Handle moreInfo FAQ flow
+      if (chatStep === 'moreInfo') {
+        setIsTyping(true);
+
+        try {
+          const result = await getFAQAnswer(messageText);
+
+          setMessages(prev => [
+            ...prev,
+            {
+              role: 'assistant',
+              type: 'text',
+              content: result.answer,
+            },
+          ]);
+
+          if (result.matched_question === null) {
+            setMessages(prev => [
+              ...prev,
+              {
+                role: 'assistant',
+                type: 'action',
+                content: 'Request personal assistance here',
+                data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
+              },
+            ]);
+          }
+        } catch (error) {
+          console.error('FAQ API error:', error);
+          setMessages(prev => [
+            ...prev,
+            {
+              role: 'assistant',
+              type: 'text',
+              content: "Sorry, we encountered an issue finding an answer. Would you like help from our support team?",
+            },
+            {
+              role: 'assistant',
+              type: 'action',
+              content: 'Request personal assistance here',
+              data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
+            },
+          ]);
+        } finally {
+          setIsTyping(false);
+        }
+
+        return;
+      }
+
     
       // ✅ Property Insights Flow
       const shouldTriggerInsights = properties && properties.length > 0 && messageText.length > 2;

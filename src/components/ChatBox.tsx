@@ -9,6 +9,7 @@ import MessageItem from './MessageItem';
 import TypingIndicator from './TypingIndicator';
 import ContactForm from "./ContactForm"
 import { ChatProperty } from '../types/chat';
+import { getFAQAnswer } from '../services/faqsService';
 import { useChatFlow } from '../hooks/useChatFlow';
 import {
   formatISODate,
@@ -801,38 +802,60 @@ const ChatBox: React.FC = () => {
     }
   };
 
-  const handleFAQFollowUp = (question: string) => {
-    setChatStep('moreInfo'); 
-  // Log the user's FAQ follow-up question
-  setMessages(prev => [
-    ...prev,
-    { role: 'user', type: 'text', content: question },
-  ]);
-
-  // Define answers for each FAQ option
-  const faqAnswers: Record<string, string> = {
-    'How do I book?': 'Booking is easy! Just search for your desired property, select your stay dates, and follow the booking steps. Need help? We’re here!',
-    'Can I contact the landlord?': 'You’ll be able to contact the landlord after your booking is confirmed, or message them if the property allows pre-booking contact.',
-    'How do I reserve my flat?': 'To reserve a flat, start by selecting your dates, location, and budget. Once you find a match, proceed to confirm your booking.',
-    // Add more as needed
-  };
-
-  const answer = faqAnswers[question] ?? "That's a great question! Let us get back to you with more details.";
-
-  setMessages(prev => [
-    ...prev,
-    {
-      role: 'assistant',
-      type: 'text',
-      content: answer,
-    },
-  ]);
-
-  // Optional: reset chatStep or keep in FAQ mode for multiple questions
-  // setChatStep(''); 
-};
-
+  const handleFAQFollowUp = async (question: string) => {
+    setChatStep('moreInfo');
   
+    // Show user's question
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', type: 'text', content: question },
+    ]);
+  
+    try {
+      const result = await getFAQAnswer(question);
+  
+      // Always show the assistant's response
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          type: 'text',
+          content: result.answer,
+        },
+      ]);
+  
+      // If no matched question, optionally show contact support option
+      if (result.matched_question === null) {
+        setMessages(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            type: 'action',
+            content: 'Request personal assistance here',
+            data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('FAQ API error:', error);
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          type: 'text',
+          content: "Sorry, we encountered an issue finding an answer. Would you like help from our support team?",
+        },
+        {
+          role: 'assistant',
+          type: 'action',
+          content: 'Request personal assistance here',
+          data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
+        },
+      ]);
+    }
+  };
+  
+
   return (
     <div ref={scrollContainerRef}  className="flex flex-col h-screen p-4 relative">
          {/*    <div ref={scrollContainerRef} /> */}
