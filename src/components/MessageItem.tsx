@@ -1,6 +1,7 @@
-import { Message } from '../types/chat';
+import { Message, ChatProperty } from '../types/chat';
 import PropertyCard from './PropertyCard'; // adjust to your actual path
 import React, { useState } from 'react';
+import ChatPropertyCard from './ChatPropertyCard';
 
 interface MessageItemProps {
   msg: Message;
@@ -22,6 +23,21 @@ const MessageItem: React.FC<MessageItemProps> = ({ msg, handleSuggestedQuestion,
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
           {msg.data.map((property, index) => (
             <PropertyCard key={property.half_property_url || index} property={property} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+ 
+
+  if (msg.type === 'chatProperties' && Array.isArray(msg.data)) {
+    return (
+      <div className="mt-6">
+        <h2 className="text-lg font-semibold mb-4">Matching Options</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {msg.data.map((property: ChatProperty, index: number) => (
+            <ChatPropertyCard key={index} {...property} />
           ))}
         </div>
       </div>

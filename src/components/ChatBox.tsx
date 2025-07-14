@@ -3,13 +3,21 @@ import { Message } from '../types/chat';
 import { getProperties } from '../services/propertyService';
 import { getPropertyInsights } from '../services/aiService';
 import { PropertyModel } from '../types/property';
-import { Range, getTrackBackground } from 'react-range';
 import PriceRangeSelector from './PriceRangeSelector'; // Import from the same folder
 import PropertyCard from './PropertyCard'; // Import from the same folder
 import MessageItem from './MessageItem';
 import TypingIndicator from './TypingIndicator';
 import ContactForm from "./ContactForm"
-import { Console } from 'console';
+import { ChatProperty } from '../types/chat';
+import { getFAQAnswer } from '../services/faqsService';
+import { useChatFlow } from '../hooks/useChatFlow';
+import {
+  formatISODate,
+  formatDateRange,
+  sanitizeAnswer,
+  isChatPropertyArray,
+} from '../utils/chatUtils';
+import ChatConvoPanel from './ChatConvoPanel'; // adjust path if needed
 
 const MIN = 0;
 const MAX = 1000;
@@ -17,7 +25,7 @@ const STEP = 10;
 
 const initialSuggestions = [
   'Search for properties in Lima',
-  'Print receipt for my booking',
+  'General Information',
   'Show me exclusive Properties only',
 ];
 
@@ -28,7 +36,7 @@ const suggestedQuestions = [
   "What Properties are close to PUCP and within how many km?",
 ];
 
-type ChatStep = null | 'district' | 'date' | 'confirmDates' | 'price' | 'done' | 'propertyInsights';
+//type ChatStep = null | 'district' | 'date' | 'confirmDates' | 'price' | 'done' | 'propertyInsights';
 
 const districtOptions = [
   { name: 'Miraflores', lat: -12.1211, lng: -77.0297 },
@@ -39,40 +47,121 @@ const districtOptions = [
   { name: 'Jesús María', lat: -12.0800, lng: -77.0431 },
 ];
 
-
 const ChatBox: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const [chatStep, setChatStep] = useState<ChatStep>(null);
-  const [bookingDetails, setBookingDetails] = useState({
-    city: '',
-    district: '',
-    districtCoordinates: { lat: 0, lng: 0 },
-    dates: '',
-    startDate: '',
-    endDate: '',
-    priceRange: '',
-    minPrice: '',
-    maxPrice: '',
-  });
-  const [pricesRange, setPriceRange] = useState<[number, number]>([400, 600]);
-  const [latestInsight, setLatestInsight] = useState<string | null>(null);
-  const [properties, setProperties] = useState<PropertyModel[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [isTyping, setIsTyping] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [showProperties, setShowProperties] = useState(false);
-  const [awaitingDateConfirmation, setAwaitingDateConfirmation] = useState<null | {
-    range: 'spring' | 'fall';
-    proposedDateRange: string;
-    startDate: string;
-    endDate:string;
-  }>(null);
-  const [resetComplete, setResetComplete] = useState(false);
 
-  const [showModal, setShowModal] = useState(false);
-  // ISO format function — always outputs 'YYYY-MM-DD'
-  const formatISODate = (d: Date): string => d.toISOString().split('T')[0];
+  const generalFAQSuggestions = [
+  'How do I book?',
+  'Can I contact the landlord?',
+  'How do I reserve my flat?',
+  ];
+  // const [messages, setMessages] = useState<Message[]>([]);
+  // const [input, setInput] = useState('');
+  // const [chatStep, setChatStep] = useState<ChatStep>(null);
+  // const [bookingDetails, setBookingDetails] = useState({
+  //   city: '',
+  //   district: '',
+  //   districtCoordinates: { lat: 0, lng: 0 },
+  //   dates: '',
+  //   startDate: '',
+  //   endDate: '',
+  //   priceRange: '',
+  //   minPrice: '',
+  //   maxPrice: '',
+  // });
+  // const [pricesRange, setPriceRange] = useState<[number, number]>([400, 600]);
+  // const [latestInsight, setLatestInsight] = useState<string | null>(null);
+  // const [properties, setProperties] = useState<PropertyModel[]>([]);
+  // const [loading, setLoading] = useState<boolean>(true);
+  // const [isTyping, setIsTyping] = useState(false);
+  // const [searchResults, setSearchResults] = useState<any[]>([]);
+  // const [showProperties, setShowProperties] = useState(false);
+  // const [awaitingDateConfirmation, setAwaitingDateConfirmation] = useState<null | {
+  //   range: 'spring' | 'fall';
+  //   proposedDateRange: string;
+  //   startDate: string;
+  //   endDate:string;
+  // }>(null);
+  // const [resetComplete, setResetComplete] = useState(false);
+  // const [showScrollButton, setShowScrollButton] = useState(false);
+  // const bottomRef = useRef<HTMLDivElement | null>(null);
+  // const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // const [showModal, setShowModal] = useState(false);
+  // const formatISODate = (d: Date): string => d.toISOString().split('T')[0];
+  // const containerRef = useRef<HTMLDivElement>(null);
+  // const [isAtBottom, setIsAtBottom] = useState(true); // Track if the user is at the bottom
+
+  const {
+    messages, setMessages,
+    input, setInput,
+    chatStep, setChatStep,
+    bookingDetails, setBookingDetails,
+    pricesRange, setPriceRange,
+    latestInsight, setLatestInsight,
+    properties, setProperties,
+    loading, setLoading,
+    isTyping, setIsTyping,
+    searchResults, setSearchResults,
+    showProperties, setShowProperties,
+    awaitingDateConfirmation, setAwaitingDateConfirmation,
+    resetComplete, setResetComplete,
+    showScrollButton, setShowScrollButton,
+    showModal, setShowModal,
+    isAtBottom, setIsAtBottom,
+  
+    scrollContainerRef,
+    bottomRef,
+    containerRef,
+    sendMessage, 
+  } = useChatFlow();
+  
+
+  const handleScroll = () => {
+    if (containerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+      const isUserAtBottom = scrollTop + clientHeight >= scrollHeight - 50;
+  
+      setIsAtBottom(isUserAtBottom);
+      setShowScrollButton(!isUserAtBottom);
+    }
+  };
+  
+  useEffect(() => {
+    if (containerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+      const isUserAtBottom = scrollTop + clientHeight >= scrollHeight - 50;
+      const isOverflowing = scrollHeight > clientHeight;
+  
+      setShowScrollButton(isOverflowing && !isUserAtBottom);
+    }
+  }, [messages]);
+  
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+  
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+  
+  useEffect(() => {
+    if (messages.length === 0) {
+      setMessages([
+        { role: 'assistant', content: 'Hi! What can I help you with today?' },
+      ]);
+    }
+  }, []);
+  
+  const scrollToBottom = () => {
+      if (containerRef.current) {
+        containerRef.current.scrollTo({
+          top: containerRef.current.scrollHeight,
+          behavior: 'smooth',
+        });
+        setIsAtBottom(true);
+        setShowScrollButton(false);
+      }
+  };
 
   // This function will be passed down to MessageItem
   const handleAction = (action: string) => {
@@ -81,71 +170,14 @@ const ChatBox: React.FC = () => {
     }
   };
 
-  const formatDateRange2 = (startMonth: number, endMonth: number): string => {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
-
-    const year = currentMonth > startMonth ? currentYear + 1 : currentYear;
-    const start = new Date(year, startMonth - 1, 1);
-    const end = new Date(year, endMonth, 0);
-
-    const format = (d: Date) => d.toLocaleDateString('en-CA');
-    return `${format(start)} to ${format(end)}`;
-  };
-
   // Make sure the date range string also uses ISO dates
-  const formatDateRange = (startMonth: number, endMonth: number, year: number): string => {
-    const start = new Date(year, startMonth - 1, 1);
-    const end = new Date(year, endMonth, 0);
-    return `${formatISODate(start)} to ${formatISODate(end)}`;
-  };
-
-  // const handleDateSelection = (range: 'spring' | 'fall') => {
-  //   const now = new Date();
-  //   const currentYear = now.getFullYear();
-  //   const currentMonth = now.getMonth() + 1;
-
-  //   const [startMonth, endMonth] = range === 'spring' ? [3, 7] : [8, 12];
-  //   const isPast = currentMonth > startMonth;
-  //   const year = isPast ? currentYear + 1 : currentYear;
-  //   const dateRange = formatDateRange(startMonth, endMonth);
-
+  // const formatDateRange = (startMonth: number, endMonth: number, year: number): string => {
   //   const start = new Date(year, startMonth - 1, 1);
   //   const end = new Date(year, endMonth, 0);
-
-  //   const format = (d: Date) => d.toLocaleDateString('en-CA');
-
-  //   if (isPast) {
-  //     //setAwaitingDateConfirmation({ range, proposedDateRange: dateRange });
-  //     setAwaitingDateConfirmation({
-  //       range,
-  //       proposedDateRange: `${format(start)} to ${format(end)}`,
-  //       startDate: format(start),
-  //       endDate: format(end),
-  //     });
-    
-  //     addAssistantMessageOnly(
-  //       `It looks like the ${range === 'spring' ? 'March to July' : 'August to December'} semester is in the past for this year. Did you mean to plan for ${year}?`
-  //     );
-      
-  //     return;
-  //   }
-
-  //   setBookingDetails(prev => ({
-  //     ...prev,
-  //     startDate: format(start),
-  //     endDate: format(end),
-  //     dates: dateRange,
-  //   }));
-    
-  //   setChatStep('price');
-  //   addAssistantMessage(
-  //     range === 'spring' ? 'March to July' : 'August to December' ,
-  //    `Got it! What is your preferred price range? (e.g. $50–$100)`
-  //  );
+  //   return `${formatISODate(start)} to ${formatISODate(end)}`;
   // };
-    const handleDateSelection = (range: 'spring' | 'fall') => {
+
+  const handleDateSelection = (range: 'spring' | 'fall') => {
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1;
@@ -183,16 +215,15 @@ const ChatBox: React.FC = () => {
         dates: dateRange,
       }));
 
-      console.log("Booking details before request", bookingDetails);
+      //console.log("Booking details before request", bookingDetails);
     
       setChatStep('price');
       addAssistantMessage(
         range === 'spring' ? 'March to July' : 'August to December',
         `Got it! What is your preferred price range? (e.g. $50–$100)`
       );
-    };
+  };
   
-
   const resetChat = () => {
     setMessages([]);
     setInput('');
@@ -241,83 +272,6 @@ const ChatBox: React.FC = () => {
     }, 100); 
   };
   
-  const handleSuggestedQuestion = async (question: string) => {
-    setChatStep('propertyInsights');
-    setIsTyping(true); 
-    try {
-      const insightResponse = await getPropertyInsights(question, properties);
-  
-      let parsedAnswer: any;
-      let isJson = false;
-      let hasContent = false;
-  
-      try {
-        parsedAnswer = JSON.parse(insightResponse.answer);
-        isJson = typeof parsedAnswer === 'object' && parsedAnswer !== null;
-        hasContent = isJson && Object.keys(parsedAnswer).length > 0;
-      } catch (e) {
-        isJson = false;
-      }
-
-      console.log('Is resposnJson handleSuggestedQuestion',  isJson);
-      const fallbackMessage: Message = {
-        role: 'assistant',
-        type: 'text',
-        content: 'Sorry, I couldn’t find any insights for that question. Would you like personal assistance?',
-      };
-  
-      const contactSupportMessage: Message = {
-        role: 'assistant',
-        type: 'action',
-        content: `Request personal assistance here`,
-        data: [
-          { label: 'Contact Support', action: 'open_contact_modal' },
-        ],
-      };
-  
-      if (!insightResponse.answer && !hasContent) {
-        // Empty or invalid insight, show fallback + support
-        setMessages(prev => [
-          ...prev,
-          { role: 'user', type: 'text', content: question },
-          fallbackMessage,
-          contactSupportMessage,
-        ]);
-      } else {
-        // Show valid answer
-        addAssistantMessage(question, insightResponse.answer);
-      }
-  
-    } catch (err) {
-      // On API error
-      const errorMessage: Message = {
-        role: 'assistant',
-        type: 'text',
-        content: 'Something went wrong while fetching insights. Please try again or contact support.',
-      };
-  
-      const contactSupportMessage: Message = {
-        role: 'assistant',
-        type: 'action',
-        content: `Would you like us to help you personally?`,
-        data: [
-          { label: 'Contact Support', action: 'open_contact_modal' },
-        ],
-      };
-  
-      setMessages(prev => [
-        ...prev,
-        { role: 'user', type: 'text', content: question },
-        errorMessage,
-        contactSupportMessage,
-      ]);
-    }
-  
-    setTimeout(() => {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-  };
-  
   const addAssistantMessage = (userSelection: string, assistantMessage: string, delay = 1000) => {
     setIsTyping(true);
     setTimeout(() => {
@@ -349,185 +303,225 @@ const ChatBox: React.FC = () => {
     }));
     setChatStep('date');
 
-   /*  setMessages(prev => [
-      ...prev,
-      { role: 'user', content: district.name },
-      {
-        role: 'assistant',
-        content: `Perfect! Let’s move on. Please select your desired date range:`,
-      },
-    ]); */
     addAssistantMessage(
        district.name ,
       `Perfect! Let’s move on. Please select your desired date range:`
     );
   };
 
-  const sendMessage = async (content?: string) => {
-    const messageText = content ?? input.trim();
-    if (!messageText) return;
-  
-    const userMsg: Message = { role: 'user', content: messageText };
-    setMessages(prev => [...prev, userMsg]);
-    setInput('');
-  
-    // ✅ Date Confirmation Flow
-    if (awaitingDateConfirmation) {
-      const answer = messageText.toLowerCase();
-  
-      if (answer.includes('yes') || answer.includes('correct')) {
-        setBookingDetails(prev => ({
-          ...prev,
-          dates: awaitingDateConfirmation.proposedDateRange,
-          startDate: awaitingDateConfirmation.startDate,
-          endDate: awaitingDateConfirmation.endDate,
-        }));
-        setAwaitingDateConfirmation(null);
-        setChatStep('price');
-  
-        setIsTyping(true);
-        setTimeout(() => {
-          setMessages(prev => [
-            ...prev,
-            { role: 'assistant', content: 'Thanks for confirming! What is your preferred price range? (e.g. $50–$100)' }
-          ]);
-          setIsTyping(false);
-        }, 1000);
-      } else {
-        setAwaitingDateConfirmation(null);
-        setIsTyping(true);
-        setTimeout(() => {
-          setMessages(prev => [
-            ...prev,
-            { role: 'assistant', content: 'No problem. Please select a different date range:' }
-          ]);
-          setIsTyping(false);
-        }, 1000);
-      }
-      return;
-    }
-  
-    // ✅ Trigger district selection flow
-    if (messageText.toLowerCase().includes('properties in lima')) {
-      setBookingDetails({
-        city: 'Lima',
-        district: '',
-        districtCoordinates: { lat: 0, lng: 0 },
-        dates: '',
-        startDate: '',
-        endDate: '',
-        priceRange: '',
-        minPrice: '',
-        maxPrice: '',
-      });
-      setChatStep('district');
-  
-      setIsTyping(true);
-      setTimeout(() => {
-        setMessages(prev => [
-          ...prev,
-          { role: 'assistant', content: 'Which district in Lima are you most interested in?' }
-        ]);
-        setIsTyping(false);
-      }, 1000);
-      return;
-    }
-  
-    // ✅ Property Insights Flow
-    const shouldTriggerInsights = properties && properties.length > 0 && messageText.length > 2;
-  
-    if (shouldTriggerInsights) {
-      setIsTyping(true);
-      try {
-        const insightResponse = await getPropertyInsights(messageText, properties);
-  
-        let parsedAnswer: any;
-        let isJson = false;
-        let hasContent = false;
-  
-        try {
-          parsedAnswer = JSON.parse(insightResponse.answer);
-          isJson = typeof parsedAnswer === 'object' && parsedAnswer !== null;
-          hasContent = isJson && Object.keys(parsedAnswer).length > 0;
-        } catch (e) {
-          isJson = false;
-        }
-  
-        if (!insightResponse.answer || !hasContent) {
-          const fallbackMsg: Message = {
-            role: 'assistant',
-            type: 'text',
-            content: 'Sorry, I couldn’t find any insights for that question. Would you like personal assistance?',
-          };
-  
-          const supportMsg: Message = {
-            role: 'assistant',
-            type: 'action',
-            content: `Request personal assistance here`,
-            data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
-          };
-  
-          setMessages(prev => [...prev, fallbackMsg, supportMsg]);
-        } else {
-          const assistantMsg: Message = { role: 'assistant', content: insightResponse.answer };
-          setMessages(prev => [...prev, assistantMsg]);
-        }
-      } catch (error) {
-        console.error('Insights API error:', error);
-  
-        const errorMsg: Message = {
-          role: 'assistant',
-          type: 'text',
-          content: 'Something went wrong while fetching insights. Please try again or contact support.',
-        };
-  
-        const supportMsg: Message = {
-          role: 'assistant',
-          type: 'action',
-          content: `Would you like us to help you personally?`,
-          data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
-        };
-  
-        setMessages(prev => [...prev, errorMsg, supportMsg]);
-      } finally {
-        setIsTyping(false);
-        setTimeout(() => {
-          bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-      }
-  
-      return;
-    }
-  
-    // 🧼 Default fallback assistant message
-    setIsTyping(true);
-    setTimeout(() => {
-      setMessages(prev => [
-        ...prev,
-        { role: 'assistant', content: "I'm here to help! Could you please rephrase or clarify your request?" }
-      ]);
-      setIsTyping(false);
-    }, 1000);
-  };
-  
-  
+  // function isChatPropertyArray(data: any): data is ChatProperty[] {
+  //   return (
+  //     Array.isArray(data) &&
+  //     data.every((item) =>
+  //       typeof item.title === 'string' &&
+  //       typeof item.price === 'number' || typeof item.price === 'string' &&
 
+  //       typeof item.rooms === 'number' &&
+  //       Array.isArray(item.amenities) &&
+  //       typeof item.url === 'string' &&
+  //       typeof item.location === 'object' &&
+  //       typeof item.location.district === 'string' &&
+  //       typeof item.location.city === 'string' &&
+  //       typeof item.location.country === 'string'
+  //     )
+  //   );
+  // }
+
+  // function sanitizeAnswer(answer: string): string {
+  //   return answer
+  //     .trim()
+  //     .replace(/^```json/i, '')
+  //     .replace(/^```/, '')
+  //     .replace(/```$/, '')
+  //     .trim();
+  // }
+
+  // const sendMessage = async (content?: string) => {
+  //   const messageText = content ?? input.trim();
+  //   if (!messageText) return;
+  
+  //   const userMsg: Message = { role: 'user', content: messageText };
+  //   setMessages(prev => [...prev, userMsg]);
+  //   setInput('');
+  
+  //   // ✅ Date Confirmation Flow
+  //   if (awaitingDateConfirmation) {
+  //     const answer = messageText.toLowerCase();
+  
+  //     if (answer.includes('yes') || answer.includes('correct')) {
+  //       setBookingDetails(prev => ({
+  //         ...prev,
+  //         dates: awaitingDateConfirmation.proposedDateRange,
+  //         startDate: awaitingDateConfirmation.startDate,
+  //         endDate: awaitingDateConfirmation.endDate,
+  //       }));
+  //       setAwaitingDateConfirmation(null);
+  //       setChatStep('price');
+  
+  //       setIsTyping(true);
+  //       setTimeout(() => {
+  //         setMessages(prev => [
+  //           ...prev,
+  //           {
+  //             role: 'assistant',
+  //             content: 'Thanks for confirming! What is your preferred price range? (e.g. $50–$100)',
+  //           }
+  //         ]);
+  //         setIsTyping(false);
+  //       }, 1000);
+  //     } else {
+  //       setAwaitingDateConfirmation(null);
+  //       setIsTyping(true);
+  //       setTimeout(() => {
+  //         setMessages(prev => [
+  //           ...prev,
+  //           {
+  //             role: 'assistant',
+  //             content: 'No problem. Please select a different date range:',
+  //           }
+  //         ]);
+  //         setIsTyping(false);
+  //       }, 1000);
+  //     }
+  //     return;
+  //   }
+  
+  //   // ✅ Trigger district selection flow
+  //   if (messageText.toLowerCase().includes('properties in lima')) {
+  //     setBookingDetails({
+  //       city: 'Lima',
+  //       district: '',
+  //       districtCoordinates: { lat: 0, lng: 0 },
+  //       dates: '',
+  //       startDate: '',
+  //       endDate: '',
+  //       priceRange: '',
+  //       minPrice: '',
+  //       maxPrice: '',
+  //     });
+  //     setChatStep('district');
+  
+  //     setIsTyping(true);
+  //     setTimeout(() => {
+  //       setMessages(prev => [
+  //         ...prev,
+  //         {
+  //           role: 'assistant',
+  //           content: 'Which district in Lima are you most interested in?',
+  //         }
+  //       ]);
+  //       setIsTyping(false);
+  //     }, 1000);
+  //     return;
+  //   }
+  
+  //   // ✅ Property Insights Flow
+  //   const shouldTriggerInsights = properties && properties.length > 0 && messageText.length > 2;
+  
+  //   if (shouldTriggerInsights) {
+  //     setIsTyping(true);
+  
+  //     try {
+  //       const insightResponse = await getPropertyInsights(messageText, properties);
+  //       const answer = insightResponse?.answer?.trim();
+  
+  //       if (!answer) {
+  //         // Empty string answer
+  //         throw new Error('Empty answer');
+  //       }
+
+  //      // console.error('Answer here :', answer);
+  
+  //       let parsed: any;
+  //       let rendered = false;
+  
+  //       try {
+  //         const sanitized = sanitizeAnswer(answer);
+  //         parsed = JSON.parse(sanitized);
+  //         if (Array.isArray(parsed) && parsed.length === 0) {
+  //           throw new Error('Empty JSON array');
+  //         }
+  //         //console.error('Parsed:', parsed);
+  //         if (isChatPropertyArray(parsed)) {
+  //           setMessages(prev => [
+  //             ...prev,
+  //             {
+  //               role: 'assistant',
+  //               type: 'chatProperties',
+  //               content: '',
+  //               data: parsed,
+  //             }
+  //           ]);
+  //           rendered = true;
+  //         }
+  //         else{
+  //           console.warn('Parsed object did not match ChatProperty[] shape', parsed);
+  //         }
+  //       } catch (err) {
+  //         // Not JSON or bad format; continue to render as plain text
+  //       }
+  
+  //       if (!rendered) {
+  //         setMessages(prev => [
+  //           ...prev,
+  //           {
+  //             role: 'assistant',
+  //             type: 'text',
+  //             content: answer,
+  //           }
+  //         ]);
+  //       }
+  //     } catch (error) {
+  //       console.error('Insight Error:', error);
+  
+  //       // 🔹 Handle empty, invalid, or error gracefully
+  //       setMessages(prev => [
+  //         ...prev,
+  //         {
+  //           role: 'assistant',
+  //           type: 'text',
+  //           content: "We're having trouble finding a clear answer for that. Would you like to speak with a real person?",
+  //         },
+  //         {
+  //           role: 'assistant',
+  //           type: 'action',
+  //           content: 'Request personal assistance',
+  //           data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
+  //         }
+  //       ]);
+  //     } finally {
+  //       setIsTyping(false);
+  //     }
+  //     return;
+  //   }
+  
+  //   // 🧼 Default fallback
+  //   setIsTyping(true);
+  //   setTimeout(() => {
+  //     setMessages(prev => [
+  //       ...prev,
+  //       {
+  //         role: 'assistant',
+  //         type: 'text',
+  //         content: "I'm here to help! Could you please rephrase or clarify your request?",
+  //       },
+  //       {
+  //         role: 'assistant',
+  //         type: 'action',
+  //         content: 'Need help from a real person?',
+  //         data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
+  //       }
+  //     ]);
+  //     setIsTyping(false);
+  //   }, 1000);
+  // };
+  
   const handleQuickResponse = (response: 'yes' | 'no') => {
     sendMessage(response);
   };
 
-  const handleStartPriceSelection = () => {
-    setChatStep('price');
-  };
-
   const handleConfirmPrice = () => {
-    // const updatedBookingDetails = {
-    //   ...bookingDetails,
-    //   minPrice: pricesRange[0].toString(),
-    //   maxPrice: pricesRange[1].toString(),
-    //   priceRange: `${pricesRange[0]}-${pricesRange[1]}`,
-    // };
-
+   
     const updatedBookingDetails = {
       ...bookingDetails,
       minPrice: pricesRange[0].toString(),
@@ -573,18 +567,7 @@ const ChatBox: React.FC = () => {
         if (response.length === 0) {
           setProperties([]); // Clear previous results
           setShowProperties(false);
-          // const noResultsSuggestions: Message = {
-          //   role: 'assistant',
-          //   type: 'suggestions',
-          //   content: 'Here are a few ways you could adjust your search:',
-          //   data: [
-          //     'Try a different district',
-          //     'Increase your max price',
-          //     'Change your dates to include weekdays',
-          //     'Search all of the city instead of a specific area',
-          //   ],
-          // };
-
+        
           const noResultsSuggestions: Message = {
             role: 'assistant',
             type: 'flowSuggestions', // <-- changed from 'suggestions'
@@ -603,7 +586,6 @@ const ChatBox: React.FC = () => {
             type: 'text',
             content: `Hmm, I couldn't find any properties that match your criteria right now.\n\nYou might want to try expanding your search area, increasing your price range, or changing the dates.`,
           };
-
 
           const contactSupportMessage: Message = {
             role: 'assistant',
@@ -667,7 +649,7 @@ const ChatBox: React.FC = () => {
     }, 1100);
   };
 
-const handleSuggestionClick = (suggestion: string) => {
+  const handleSuggestionClick = (suggestion: string) => {
     switch (suggestion) {
       case 'Try a different district':
         setChatStep('district');
@@ -716,165 +698,201 @@ const handleSuggestionClick = (suggestion: string) => {
         break;
     }
   };
-  
-  
- const containerRef = useRef<HTMLDivElement>(null);
 
- const [isAtBottom, setIsAtBottom] = useState(true); // Track if the user is at the bottom
+  const handleSuggestedQuestion = async (question: string) => {
 
- useEffect(() => {
-  if (messages.length > 5) {
-    if (isAtBottom && containerRef.current && bottomRef.current) {
+    // ✅ Check for "General Information"
+  if (question.toLowerCase() === 'general information') {
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', type: 'text', content: question },
+      {
+        role: 'assistant',
+        type: 'text',
+        content: 'Sure! What would you like to know about?',
+      },
+    ]);
 
-      bottomRef.current.scrollIntoView({ behavior: 'smooth' });
-    } else {
-
-      if (!isAtBottom) console.log('   - User is not at bottom');
-      if (!containerRef.current) console.log('   - containerRef is null');
-      if (!bottomRef.current) console.log('   - bottomRef is null');
-    }
-  } else {
-    console.log('🔕 Not enough messages to scroll (<= 5)');
+    setChatStep('faqIntro'); // Used to trigger FAQ follow-ups in JSX
+    return; // ✅ Exit early — skip the rest of this function
   }
-}, [messages, isAtBottom]);
-
-
-  const handleScroll = () => {
-    if (containerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-      setIsAtBottom(scrollTop + clientHeight === scrollHeight);
+    setChatStep('propertyInsights');
+    setIsTyping(true);
+  
+    const fallbackSupportMessages: Message[] = [
+      {
+        role: 'assistant',
+        type: 'text',
+        content: 'Sorry, we couldn’t find anything useful for that. Would you like personal assistance?',
+      },
+      {
+        role: 'assistant',
+        type: 'action',
+        content: 'Request personal assistance here',
+        data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
+      },
+    ];
+  
+    try {
+      const insightResponse = await getPropertyInsights(question, properties);
+      const raw = insightResponse.answer?.trim();
+  
+      // Track user question
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', type: 'text', content: question },
+      ]);
+  
+      if (!raw) {
+        setMessages(prev => [...prev, ...fallbackSupportMessages]);
+        return;
+      }
+  
+      let parsed: any;
+      try {
+        const sanitized = sanitizeAnswer(raw);
+        parsed = JSON.parse(sanitized);
+       //parsed = JSON.parse(raw);
+  
+        if (isChatPropertyArray(parsed)) {
+          setMessages(prev => [
+            ...prev,
+            {
+              role: 'assistant',
+              type: 'chatProperties',
+              content: '',
+              data: parsed,
+            },
+          ]);
+          return;
+        }
+      } catch (err) {
+        console.warn('Invalid JSON in insight answer:', err);
+      }
+  
+      // Fallback to plain text if not valid JSON/chat properties
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          type: 'text',
+          content: raw,
+        },
+      ]);
+    } catch (err) {
+      console.error('handleSuggestedQuestion error:', err);
+  
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', type: 'text', content: question },
+        {
+          role: 'assistant',
+          type: 'text',
+          content: 'We encountered a technical issue. Would you like help from our team?',
+        },
+        {
+          role: 'assistant',
+          type: 'action',
+          content: 'Request personal assistance here',
+          data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
+        },
+      ]);
+    } finally {
+      setIsTyping(false);
     }
   };
 
-  // Add a scroll event listener to handle checking if at the bottom
-  useEffect(() => {
-    const container = containerRef.current;
-    container?.addEventListener('scroll', handleScroll);
-    return () => container?.removeEventListener('scroll', handleScroll);
-  }, []);
+  const handleFAQFollowUp = async (question: string) => {
+    setChatStep('moreInfo');
   
-  useEffect(() => {
-    if (messages.length === 0) {
-      setMessages([
-        { role: 'assistant', content: 'Hi! What can I help you with today?' },
+    // Show user's question
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', type: 'text', content: question },
+    ]);
+  
+    try {
+      const result = await getFAQAnswer(question);
+  
+      // Always show the assistant's response
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          type: 'text',
+          content: result.answer,
+        },
+      ]);
+  
+      // If no matched question, optionally show contact support option
+      if (result.matched_question === null) {
+        setMessages(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            type: 'action',
+            content: 'Request personal assistance here',
+            data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('FAQ API error:', error);
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          type: 'text',
+          content: "Sorry, we encountered an issue finding an answer. Would you like help from our support team?",
+        },
+        {
+          role: 'assistant',
+          type: 'action',
+          content: 'Request personal assistance here',
+          data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
+        },
       ]);
     }
-  }, []);
-
-  const bottomRef = useRef<HTMLDivElement | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  };
+  
 
   return (
     <div ref={scrollContainerRef}  className="flex flex-col h-screen p-4 relative">
          {/*    <div ref={scrollContainerRef} /> */}
       <div ref={containerRef} className="flex-1 overflow-y-auto space-y-4 pr-4 scrollbar-thin scrollbar-thumb-gray-400">
-
-          <>
-           {messages.map((msg, i) => (
-              <MessageItem key={i} msg={msg} 
-              handleSuggestedQuestion={handleSuggestedQuestion}
-              handleSuggestionClick={handleSuggestionClick}
-              handleAction={handleAction} //
-               />
-            ))}
-
-             {/* Modal Contact Form */}
-      {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4">
-          <div className="relative bg-white rounded-xl w-full max-w-md p-6">
+          {messages.length > 0 && (
             <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl"
-              onClick={() => setShowModal(false)}
+              onClick={resetChat}
+              className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1.5 text-sm rounded hover:bg-red-600 shadow-md z-10"
             >
-              &times;
+              Start Over
             </button>
-            <ContactForm onClose={() => setShowModal(false)} />
-          </div>
-        </div>
-      )}
-
-{messages.length > 0 && (
-  <button
-    onClick={resetChat}
-    className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1.5 text-sm rounded hover:bg-red-600 shadow-md z-10"
-  >
-    Start Over
-  </button>
-)}
-
-            {messages.length === 1 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {initialSuggestions.map((text, i) => (
-                  <button
-                    key={i}
-                    onClick={() => sendMessage(text)}
-                    className="bg-[#f5694b]/10 hover:bg-[#f5694b]/20 text-sm text-[#f5694b] px-4 py-2 rounded-lg border border-[#f5694b]"
-                  >
-                    {text}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {isTyping && <TypingIndicator />}
-
-            {chatStep === 'district' && !isTyping && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {districtOptions.map((d, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleDistrictSelection(d.name)}
-                    className="bg-purple-100 hover:bg-purple-200 text-sm text-purple-800 px-4 py-2 rounded-lg border border-purple-400"
-                  >
-                    {d.name}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {chatStep === 'date' && !awaitingDateConfirmation && !isTyping && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                <button
-                  onClick={() => handleDateSelection('spring')}
-                  className="bg-blue-100 hover:bg-blue-200 text-sm text-blue-800 px-4 py-2 rounded-lg border border-blue-400"
-                >
-                  March to July
-                </button>
-                <button
-                  onClick={() => handleDateSelection('fall')}
-                  className="bg-green-100 hover:bg-green-200 text-sm text-green-800 px-4 py-2 rounded-lg border border-green-400"
-                >
-                  August to December
-                </button>
-              </div>
-            )}
-
-          {chatStep === 'price' && !isTyping && (
-            <PriceRangeSelector
-            pricesRange={pricesRange}
-            setPriceRange={setPriceRange}
-            handleConfirmPrice={handleConfirmPrice}
-          />
           )}
 
-            {awaitingDateConfirmation && !isTyping  &&  (
-              <div className="flex gap-2 mt-2">
-                <button
-                  onClick={() => handleQuickResponse('yes')}
-                  className="bg-green-100 hover:bg-green-200 text-green-800 px-4 py-2 text-sm rounded-lg border border-green-400"
-                >
-                  Yes
-                </button>
-                <button
-                  onClick={() => handleQuickResponse('no')}
-                  className="bg-red-100 hover:bg-red-200 text-red-800 px-4 py-2 text-sm rounded-lg border border-red-400"
-                >
-                  No
-                </button>
-              </div>
-            )}
-             <div ref={bottomRef} /> 
-          </>
+        <ChatConvoPanel
+          messages={messages}
+          showModal={showModal}
+          setShowModal={setShowModal}
+          handleSuggestedQuestion={handleSuggestedQuestion}
+          handleSuggestionClick={handleSuggestionClick}
+          handleAction={handleAction}
+          resetChat={resetChat}
+          isTyping={isTyping}
+          chatStep={chatStep}
+          districtOptions={districtOptions}
+          handleDistrictSelection={handleDistrictSelection}
+          handleDateSelection={handleDateSelection}
+          awaitingDateConfirmation={awaitingDateConfirmation}
+          handleQuickResponse={handleQuickResponse}
+          generalFAQSuggestions={generalFAQSuggestions}
+          handleFAQFollowUp={handleFAQFollowUp}
+          pricesRange={pricesRange}
+          setPriceRange={setPriceRange}
+          handleConfirmPrice={handleConfirmPrice}
+          sendMessage={sendMessage}
+          initialSuggestions={initialSuggestions}
+          bottomRef={bottomRef}
+      />
         
       </div>
 
@@ -889,6 +907,17 @@ const handleSuggestionClick = (suggestion: string) => {
         </button>
       </div>
     )}
+
+      {showScrollButton && (
+        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10">
+          <button
+            onClick={scrollToBottom}
+            className="bg-[#f5694b] text-white px-4 py-2 rounded shadow hover:bg-[#e0583e] text-sm transition"
+          >
+            Catch Up
+          </button>
+        </div>
+      )}
 
       <div className="flex mt-4">
         <input
