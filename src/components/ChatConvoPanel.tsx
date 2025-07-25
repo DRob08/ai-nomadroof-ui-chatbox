@@ -80,23 +80,24 @@ const ChatConvoPanel: React.FC<ChatConvoPanelProps> = ({
         </div>
       )}
 
-      {messages.length === 1 && (
-        <div className="flex flex-wrap gap-2 mt-2">
-          {initialSuggestions.map((text, i) => (
-            <button
-              key={i}
-              onClick={() =>
-                text.toLowerCase() === 'general information'
-                  ? handleSuggestedQuestion(text)
-                  : sendMessage(text)
-              }
-              className="bg-[#f5694b]/10 hover:bg-[#f5694b]/20 text-sm text-[#f5694b] px-4 py-2 rounded-lg border border-[#f5694b]"
-            >
-              {text}
-            </button>
-          ))}
-        </div>
-      )}
+{messages.length === 1 && (
+  <div className="flex flex-wrap gap-2 mt-2">
+    {initialSuggestions.map((text, i) => (
+      <button
+        key={i}
+        onClick={() =>
+          ['general information', 'get booking receipt'].includes(text.toLowerCase())
+            ? handleSuggestedQuestion(text)
+            : sendMessage(text)
+        }
+        className="bg-[#f5694b]/10 hover:bg-[#f5694b]/20 text-sm text-[#f5694b] px-4 py-2 rounded-lg border border-[#f5694b]"
+      >
+        {text}
+      </button>
+    ))}
+  </div>
+)}
+
 
       {isTyping && <TypingIndicator />}
 

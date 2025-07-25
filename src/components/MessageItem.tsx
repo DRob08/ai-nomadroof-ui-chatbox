@@ -2,6 +2,8 @@ import { Message, ChatProperty } from '../types/chat';
 import PropertyCard from './PropertyCard'; // adjust to your actual path
 import React, { useState } from 'react';
 import ChatPropertyCard from './ChatPropertyCard';
+import ReceiptCard from './ReceiptCard';
+import { ReceiptModel } from '../types/receipt';
 
 interface MessageItemProps {
   msg: Message;
@@ -9,8 +11,6 @@ interface MessageItemProps {
   handleSuggestionClick?: (suggestion: string) => void; // NEW
   handleAction?: (action: string) => void; // 👈 Add this
 }
-
-
 
 
 const MessageItem: React.FC<MessageItemProps> = ({ msg, handleSuggestedQuestion, handleSuggestionClick, handleAction }) => {
@@ -28,6 +28,20 @@ const MessageItem: React.FC<MessageItemProps> = ({ msg, handleSuggestedQuestion,
       </div>
     );
   }
+
+  if (msg.type === 'receipt' && msg.data) {
+    const receipt: ReceiptModel = msg.data;
+    return (
+      <div className="flex items-start space-x-2">
+        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200">
+          🤖
+        </div>
+        <ReceiptCard data={receipt} />
+      </div>
+    );
+  }
+  
+  
 
  
 

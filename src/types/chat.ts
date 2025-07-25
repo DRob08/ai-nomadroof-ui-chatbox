@@ -1,8 +1,16 @@
+// src/types/chat.ts
+import { ReceiptModel } from '../types/receipt';
+
 export interface Message {
   role: 'assistant' | 'user';
   content: string;
-  type?: 'text' | 'properties' | 'insight' | 'suggestions' |'flowSuggestions' |'action' |'chatProperties';
-  data?: any; // can be strongly typed later
+  type?: 'text' | 'properties' | 'insight' | 'suggestions' | 'flowSuggestions' | 'action' | 'chatProperties' | 'receipt'; // ✅ Add 'receipt'
+  data?: any; // We'll refine the type below
+}
+
+export interface ReceiptMessage extends Message {
+  type: 'receipt';
+  data: ReceiptModel;
 }
 
 export interface ChatLocation {
@@ -31,7 +39,11 @@ export type ChatStep =
   | 'done'
   | 'propertyInsights'
   | 'faqIntro'
-  | 'moreInfo';
+  | 'moreInfo'
+  | 'receipt_booking_id'  // 👈 new: step where user enters booking ID
+  | 'receipt_email'
+  | 'bookingInfo';       // 👈 new: step where user enters email
+
 
 
   // src/types/chat.ts (or similar)

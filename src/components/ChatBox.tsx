@@ -18,6 +18,8 @@ import {
   isChatPropertyArray,
 } from '../utils/chatUtils';
 import ChatConvoPanel from './ChatConvoPanel'; // adjust path if needed
+import ReceiptCard from './ReceiptCard'; // Import from the same folder
+
 
 const MIN = 0;
 const MAX = 1000;
@@ -26,7 +28,7 @@ const STEP = 10;
 const initialSuggestions = [
   'Search for properties in Lima',
   'General Information',
-  'Show me exclusive Properties only',
+  'Get Booking receipt',
 ];
 
 const suggestedQuestions = [
@@ -111,6 +113,7 @@ const ChatBox: React.FC = () => {
     scrollContainerRef,
     bottomRef,
     containerRef,
+    receiptData,setReceiptData,
     sendMessage, 
   } = useChatFlow();
   
@@ -238,6 +241,8 @@ const ChatBox: React.FC = () => {
       priceRange: '',
       minPrice: '',
       maxPrice: '',
+      booking_id:'',
+      email:''
     });
     setPriceRange([400, 600]);
     setLatestInsight(null);
@@ -247,10 +252,11 @@ const ChatBox: React.FC = () => {
     setSearchResults([]);
     setShowProperties(false);
     setAwaitingDateConfirmation(null);
+    setReceiptData(null);
 
     // Set resetComplete flag to true to trigger scrolling
     setResetComplete(true);
-
+    
     const Greetings: Message = {
       role: 'assistant',
       type: 'text',
@@ -701,6 +707,9 @@ const ChatBox: React.FC = () => {
 
   const handleSuggestedQuestion = async (question: string) => {
 
+   
+    console.log('User input:', question.toLowerCase());
+
     // ✅ Check for "General Information"
   if (question.toLowerCase() === 'general information') {
     setMessages(prev => [
@@ -716,6 +725,23 @@ const ChatBox: React.FC = () => {
     setChatStep('faqIntro'); // Used to trigger FAQ follow-ups in JSX
     return; // ✅ Exit early — skip the rest of this function
   }
+
+
+
+  if (question.toLowerCase().includes('receipt')) {
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', type: 'text', content: question },
+      {
+        role: 'assistant',
+        type: 'text',
+        content: 'Sure! Please enter your Booking ID.',
+      },
+    ]);
+    setChatStep('receipt_booking_id'); // 👈 first substep
+    return;
+  }
+  
     setChatStep('propertyInsights');
     setIsTyping(true);
   
@@ -918,6 +944,8 @@ const ChatBox: React.FC = () => {
           </button>
         </div>
       )}
+
+      
 
       <div className="flex mt-4">
         <input
