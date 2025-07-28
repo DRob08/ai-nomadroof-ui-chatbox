@@ -10,44 +10,42 @@ declare global {
 }
 
 export const loadGA = () => {
-  if (typeof window === 'undefined' || !GA_MEASUREMENT_ID) return;
+  return new Promise<void>((resolve) => {
+   // const GA_MEASUREMENT_ID = 'G-4KQV0SXX8Z';
+    console.log('GA ID:', GA_MEASUREMENT_ID);
 
-  // Prevent loading GA script multiple times
-  if (document.querySelector(`script[src*="${GA_MEASUREMENT_ID}"]`)) {
-    return;
-  }
+    const script = document.createElement('script');
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+    script.async = true;
+    script.onload = () => {
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      function gtag(...args: any[]) {
+        (window as any).dataLayer.push(args);
+      }
 
-  // Create and insert the GA script tag
-  const script = document.createElement('script');
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
-  script.async = true;
-  document.head.appendChild(script);
+      (window as any).gtag = gtag;
+      gtag('js', new Date());
+      gtag('config', GA_MEASUREMENT_ID, {
+        send_page_view: false, // prevent auto pageview if you're handling manually
+      });
 
-  // Initialize dataLayer if not already
-  window.dataLayer = window.dataLayer || [];
+      resolve();
+    };
 
-  // Define gtag function that pushes to dataLayer
-  window.gtag = function (...args: any[]) {
-    window.dataLayer.push(args);
-  };
-
-  // Initialize gtag with current time and config
-  window.gtag('js', new Date());
-
-  // Disable automatic page_view, we will track manually
-  window.gtag('config', GA_MEASUREMENT_ID, {
-    send_page_view: false,
+    document.head.appendChild(script);
   });
 };
 
 export const pageview = (url: string) => {
-  if (typeof window.gtag !== 'function' || !GA_MEASUREMENT_ID) return;
-
-  window.gtag('event', 'page_view', {
-    page_path: url,
-    send_to: GA_MEASUREMENT_ID,
-  });
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', 'page_view', {
+      page_path: url,
+    });
+  } else {
+    console.warn('gtag not defined');
+  }
 };
+
 
 export interface GAEvent {
   action: string;

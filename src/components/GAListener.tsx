@@ -6,6 +6,7 @@ const GAListener = () => {
   const location = useLocation();
 
   useEffect(() => {
+    console.log('GA pageview sent:', location.pathname + location.search);
     pageview(location.pathname + location.search);  // Send pageview on route changes
   }, [location]);
 
