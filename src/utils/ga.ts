@@ -9,7 +9,7 @@ declare global {
   }
 }
 
-export const loadGA = () => {
+/*export const loadGA = () => {
   return new Promise<void>((resolve) => {
    // const GA_MEASUREMENT_ID = 'G-4KQV0SXX8Z';
     console.log('GA ID:', GA_MEASUREMENT_ID);
@@ -34,7 +34,7 @@ export const loadGA = () => {
 
     document.head.appendChild(script);
   });
-};
+};*/
 
 export const pageview = (url: string) => {
   if (typeof window.gtag === 'function') {

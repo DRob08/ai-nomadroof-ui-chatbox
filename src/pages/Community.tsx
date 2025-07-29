@@ -4,6 +4,7 @@ import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
 import "yet-another-react-lightbox/styles.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 import ContactForm from "../components/ContactForm"
+import { event as trackEvent } from '../utils/ga';
 
 const Community = () => {
     const [showModal, setShowModal] = useState(false);
@@ -204,11 +205,19 @@ const Community = () => {
       Reach us directly on WhatsApp.
     </p>
     <a
-      href="https://wa.me/51924634308"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 bg-green-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-green-600 transition"
-    >
+  href="https://wa.me/51924634308"
+  target="_blank"
+  rel="noopener noreferrer"
+  onClick={() => {
+    trackEvent({
+      action: 'click_whatsapp',
+      category: 'Engagement',
+      label: 'Community page - WhatsApp',
+    });
+  }}
+  className="inline-flex items-center gap-2 bg-green-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-green-600 transition"
+>
+
       <svg
         xmlns="http://www.w3.org/2000/svg"
         className="w-5 h-5"
