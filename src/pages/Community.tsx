@@ -65,7 +65,7 @@ const Community = () => {
       date: "June 15, 2025",
       title: "Language Exchange Night",
       desc: "Practice Spanish, English, Portuguese, and more with fellow students over snacks and games.",
-      image: "/images/community/nomadroof-events-language-exchange.JPG",
+      image: "/images/community/nomadroof-events-language-exchange.jpg",
     },
     {
       date: "June 22, 2025",
