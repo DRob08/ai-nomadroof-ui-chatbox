@@ -65,19 +65,19 @@ const Community = () => {
       date: "June 15, 2025",
       title: "Language Exchange Night",
       desc: "Practice Spanish, English, Portuguese, and more with fellow students over snacks and games.",
-      image: "/images/community/nomadroof-events-language-exchange.jpg",
+      image: "/images/community/nomadroof-events-language-exchange.JPG",
     },
     {
       date: "June 22, 2025",
       title: "Beach BBQ in Miraflores",
       desc: "Join us for a sunset BBQ with music and games by the Pacific Ocean.",
-      image: "/images/community/nomadroof-events-beach-bbq-miraflores.jpg",
+      image: "/images/community/nomadroof-events-beach-bbq-miraflores.JPG",
     },
     {
       date: "July 1, 2025",
       title: "Hiking Trip to Machu Picchu",
       desc: "An unforgettable 2-day hiking adventure to one of the world's wonders.",
-      image: "/images/community/nomadroof-events-hiking-trip.jpg",
+      image: "/images/community/nomadroof-events-hiking-trip.JPG",
     },
   ];
 
