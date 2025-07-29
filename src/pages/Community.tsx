@@ -40,29 +40,44 @@ const Community = () => {
   ];
 
   const members = [
-    { name: "Lucía (Argentina)", quote: "The trips and new friends made my exchange unforgettable!", imgId: 32 },
-    { name: "Jonas (Germany)", quote: "I felt supported the entire time. It felt like home.", imgId: 45 },
-    { name: "Aya (Japan)", quote: "The events helped me connect even when I didn’t know the language.", imgId: 12 },
+    {
+      name: "Angelo (Germany)",
+      quote:
+        "Meine WG in Miraflores über Nomadroof war die beste Entscheidung für mein Auslandssemester in Lima",
+      image: "https://www.nomadroof.com/wp-content/uploads/2018/12/angelo-eder.jpg",
+    },
+    {
+      name: "Cornelia (France)",
+      quote: "I highly recommend using Nomadroof, thankful for all the support received during the process and during the whole stay in Lima. Couldn’t wish for a better placement and safeness.",
+      image: "https://www.nomadroof.com/wp-content/uploads/2023/04/cornelia-review-image.jpeg",
+    },
+    {
+      name: "Gabriele (Italy)",
+      quote:
+        "Sono stato in un appartamento Nomadroof durante il mio exchange a Lima e mi sono trovato benissimo. Lo staff è accogliente e disponibile e l’ambiente è ottimo. Lo consiglio vivamente!",
+      image: "https://www.nomadroof.com/wp-content/uploads/2023/04/gabriele_review_image.jpeg",
+    },
   ];
+  
 
   const events = [
     {
       date: "June 15, 2025",
       title: "Language Exchange Night",
       desc: "Practice Spanish, English, Portuguese, and more with fellow students over snacks and games.",
-      image: "/images/community/event-language-exchange.png",
+      image: "/images/community/nomadroof-events-language-exchange.jpg",
     },
     {
       date: "June 22, 2025",
       title: "Beach BBQ in Miraflores",
       desc: "Join us for a sunset BBQ with music and games by the Pacific Ocean.",
-      image: "/images/community/event-bbq.png",
+      image: "/images/community/nomadroof-events-beach-bbq-miraflores.jpg",
     },
     {
       date: "July 1, 2025",
       title: "Hiking Trip to Machu Picchu",
       desc: "An unforgettable 2-day hiking adventure to one of the world's wonders.",
-      image: "/images/community/event-hiking.png",
+      image: "/images/community/nomadroof-events-hiking-trip.jpg",
     },
   ];
 
@@ -99,10 +114,10 @@ const Community = () => {
           {members.map((member, i) => (
             <div key={i} className="bg-gray-50 rounded-2xl shadow-md p-6 text-center border border-gray-200">
               <img
-                src={`https://i.pravatar.cc/150?img=${member.imgId}`}
-                alt={member.name}
-                className="w-24 h-24 rounded-full mx-auto mb-4 object-cover ring-4 ring-[#f5694b]"
-              />
+  src={member.image}
+  alt={member.name}
+  className="w-24 h-24 rounded-full mx-auto mb-4 object-cover ring-4 ring-[#f5694b]"
+/>
               <h4 className="text-lg font-semibold">{member.name}</h4>
               <p className="text-gray-600 italic mt-2">"{member.quote}"</p>
             </div>
@@ -171,6 +186,44 @@ const Community = () => {
   Join Our Community
 </button>
 </section>
+
+<section className="flex flex-col md:flex-row items-center justify-center bg-white rounded-xl overflow-hidden shadow-md my-12">
+  {/* Left side - Full Image */}
+  <div className="w-full md:w-1/2 h-64 md:h-auto">
+    <img
+      src="/images/community/nomadroof-events-group-pic.JPG"
+      alt="Nomadroof Community Event"
+      className="w-full h-full object-cover"
+    />
+  </div>
+
+  {/* Right side - WhatsApp CTA */}
+  <div className="w-full md:w-1/2 flex flex-col items-center justify-center text-center p-8">
+    <h3 className="text-2xl font-bold mb-3 text-gray-800">Need Help?</h3>
+    <p className="text-lg text-gray-600 mb-5">
+      Reach us directly on WhatsApp.
+    </p>
+    <a
+      href="https://wa.me/51924634308"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-2 bg-green-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-green-600 transition"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-5 h-5"
+        fill="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path d="M20.52 3.48a11.78 11.78 0 0 0-16.7 0A11.8 11.8 0 0 0 2.4 16.96L.9 22.35a1 1 0 0 0 1.25 1.25l5.39-1.49a11.8 11.8 0 0 0 13.98-13.98 11.79 11.79 0 0 0-1.99-3.65zM12 21.2a9.2 9.2 0 0 1-4.74-1.3l-.34-.2-3.2.89.89-3.2-.2-.34a9.2 9.2 0 1 1 7.59 4.15zm5.3-6.8c-.29-.14-1.74-.86-2.01-.96-.27-.1-.47-.14-.67.15s-.77.96-.95 1.15-.35.21-.64.07a7.5 7.5 0 0 1-2.21-1.36 8.3 8.3 0 0 1-1.54-1.91c-.16-.28-.02-.43.12-.58.13-.13.29-.35.43-.52.14-.17.18-.29.28-.48.1-.2.05-.38-.02-.52-.07-.14-.67-1.6-.91-2.2-.24-.58-.49-.5-.67-.51l-.57-.01c-.2 0-.52.08-.79.38s-1.04 1.02-1.04 2.48c0 1.46 1.07 2.87 1.22 3.07.14.2 2.1 3.21 5.1 4.5.71.31 1.27.5 1.7.64.71.23 1.35.2 1.86.13.57-.08 1.74-.71 1.99-1.39.25-.68.25-1.27.18-1.39-.08-.12-.27-.19-.56-.33z" />
+      </svg>
+      Message Us
+    </a>
+  </div>
+</section>
+
+
+
 
  {/* Modal */}
  {showModal && (
