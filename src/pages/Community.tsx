@@ -5,6 +5,7 @@ import "yet-another-react-lightbox/styles.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 import ContactForm from "../components/ContactForm"
 import { event as trackEvent } from '../utils/ga';
+import events, { EventItem } from "../data/events";
 
 const Community = () => {
     const [showModal, setShowModal] = useState(false);
@@ -61,26 +62,27 @@ const Community = () => {
   ];
   
 
-  const events = [
-    {
-      date: "June 15, 2025",
-      title: "Language Exchange Night",
-      desc: "Practice Spanish, English, Portuguese, and more with fellow students over snacks and games.",
-      image: "/images/community/nomadroof-events-language-exchange.jpg",
-    },
-    {
-      date: "June 22, 2025",
-      title: "Beach BBQ in Miraflores",
-      desc: "Join us for a sunset BBQ with music and games by the Pacific Ocean.",
-      image: "/images/community/nomadroof-events-beach-bbq-miraflores.JPG",
-    },
-    {
-      date: "July 1, 2025",
-      title: "Hiking Trip to Machu Picchu",
-      desc: "An unforgettable 2-day hiking adventure to one of the world's wonders.",
-      image: "/images/community/nomadroof-events-hiking-trip.JPG",
-    },
-  ];
+//  const events = [
+//   {
+//     date: "August 11, 2025",
+//     title: "Meet-up Night and Fiesta TM",
+//     desc: "Because some students will already be in Lima, we're kicking off Semester 2025-02 with our first meet-up in one of our houses. More info in our WhatsApp group!",
+//     image: "/images/community/nomadroof-events-language-exchange.jpg",
+//   },
+//   {
+//     date: "August 19, 2025",
+//     title: "Welcome Party Semester 2025-02",
+//     desc: "Get ready for the biggest Welcome Party of the year in Miraflores! Live DJs, activities, games, beer pong, food, open bar, and much more with students from all our houses and apartments.",
+//     image: "/images/community/nomadroof-events-beach-bbq-miraflores.JPG",
+//   },
+//   {
+//     date: "August 27-31, 2025",
+//     title: "Huaraz Integration Trip",
+//     desc: "Trek through big mountains, turquoise lagoons, and beautiful landscapes in Huaraz. Discover its culture and connect with fellow exchange students in nature!",
+//     image: "/images/community/nomadroof-events-hiking-trip.JPG",
+//   },
+// ];
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-16 space-y-24">
@@ -109,7 +111,7 @@ const Community = () => {
       </section>
 
       {/* Testimonials */}
-      <section>
+      {/* <section>
         <h2 className="text-4xl font-bold text-center mb-12 text-[#f5694b]">What Our Members Say</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {members.map((member, i) => (
@@ -124,7 +126,7 @@ const Community = () => {
             </div>
           ))}
         </div>
-      </section>
+      </section> */}
 
       {/* Events */}
       <section>
