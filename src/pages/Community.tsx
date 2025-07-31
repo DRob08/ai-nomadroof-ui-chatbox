@@ -11,7 +11,7 @@ const Community = () => {
     const [showModal, setShowModal] = useState(false);
   const galleryImages = [
     { src: "/images/community/nomadroof-events-1.png" },
-    { src: "/images/community/nomadroof-events-2.png" },
+   // { src: "/images/community/nomadroof-events-2.png" },
     { src: "/images/community/nomadroof-events-3.png" },
     { src: "/images/community/nomadroof-events-4.png" },
     { src: "/images/community/nomadroof-events-5.png" },
