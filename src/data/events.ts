@@ -8,7 +8,7 @@ export interface EventItem {
 const events: EventItem[] = [
   {
     date: "August 12, 2025",
-    title: "Meet-up Night and Fiesta TM",
+    title: "Meet-up Night and Salsa Night",
     desc: "Because some students will already be in Lima, we're kicking off Semester 2025-02 with our first meet-up in one of our houses. More info in our WhatsApp group!",
     image: "/images/community/nomadroof-events-language-exchange.jpg",
   },

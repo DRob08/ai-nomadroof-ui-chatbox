@@ -25,18 +25,18 @@ const Community = () => {
 
   const highlights = [
     {
-      title: "Latam Trips & Adventures",
-      desc: "From hiking volcanoes to exploring ancient ruins, we organize unforgettable trips across Latin America.",
+      title: "Trips & Adventures",
+      desc: "From trekking into the mountains to exploring amazon river, we organize unforgettable trips across Peru.",
       image: "/images/community/nomadroof-events-8.png",
     },
     {
       title: "Events & Socials",
-      desc: "Weekly events, BBQs, language exchanges, and game nights to help students bond and make lifelong friends.",
+      desc: "Weekly events, welcome parties, social meet-ups, and game nights to help students bond and make lifelong friends.",
       image: "/images/community/nomadroof-events-2.png",
     },
     {
       title: "Student Support",
-      desc: "Arrival tips, legal help, cultural guidance — we’re with you from check-in to farewell.",
+      desc: "Arrival tips, travel tips, cultural and local guidance — we’re with you from check-in to farewell.",
       image: "/images/community/nomadroof-events-7.png",
     },
   ];
