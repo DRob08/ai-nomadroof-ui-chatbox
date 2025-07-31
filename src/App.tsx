@@ -4,10 +4,12 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import Community from "./pages/Community";
+import GAListener from "./components/GAListener"; // ✅ Pageview tracker
 
 function App() {
   return (
     <Router>
+      <GAListener />
       <div className="min-h-screen flex flex-col bg-gray-10">
         <Header />
         {/* Removed max-w-4xl here to allow full-width layout */}

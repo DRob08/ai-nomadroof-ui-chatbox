@@ -18,6 +18,9 @@ import {
   isChatPropertyArray,
 } from '../utils/chatUtils';
 import ChatConvoPanel from './ChatConvoPanel'; // adjust path if needed
+import { event as trackEvent } from '../utils/ga';
+import ReceiptCard from './ReceiptCard'; // Import from the same folder
+
 
 const MIN = 0;
 const MAX = 1000;
@@ -26,7 +29,7 @@ const STEP = 10;
 const initialSuggestions = [
   'Search for properties in Lima',
   'General Information',
-  'Show me exclusive Properties only',
+  'Get Booking receipt',
 ];
 
 const suggestedQuestions = [
@@ -54,41 +57,7 @@ const ChatBox: React.FC = () => {
   'Can I contact the landlord?',
   'How do I reserve my flat?',
   ];
-  // const [messages, setMessages] = useState<Message[]>([]);
-  // const [input, setInput] = useState('');
-  // const [chatStep, setChatStep] = useState<ChatStep>(null);
-  // const [bookingDetails, setBookingDetails] = useState({
-  //   city: '',
-  //   district: '',
-  //   districtCoordinates: { lat: 0, lng: 0 },
-  //   dates: '',
-  //   startDate: '',
-  //   endDate: '',
-  //   priceRange: '',
-  //   minPrice: '',
-  //   maxPrice: '',
-  // });
-  // const [pricesRange, setPriceRange] = useState<[number, number]>([400, 600]);
-  // const [latestInsight, setLatestInsight] = useState<string | null>(null);
-  // const [properties, setProperties] = useState<PropertyModel[]>([]);
-  // const [loading, setLoading] = useState<boolean>(true);
-  // const [isTyping, setIsTyping] = useState(false);
-  // const [searchResults, setSearchResults] = useState<any[]>([]);
-  // const [showProperties, setShowProperties] = useState(false);
-  // const [awaitingDateConfirmation, setAwaitingDateConfirmation] = useState<null | {
-  //   range: 'spring' | 'fall';
-  //   proposedDateRange: string;
-  //   startDate: string;
-  //   endDate:string;
-  // }>(null);
-  // const [resetComplete, setResetComplete] = useState(false);
-  // const [showScrollButton, setShowScrollButton] = useState(false);
-  // const bottomRef = useRef<HTMLDivElement | null>(null);
-  // const scrollContainerRef = useRef<HTMLDivElement>(null);
-  // const [showModal, setShowModal] = useState(false);
-  // const formatISODate = (d: Date): string => d.toISOString().split('T')[0];
-  // const containerRef = useRef<HTMLDivElement>(null);
-  // const [isAtBottom, setIsAtBottom] = useState(true); // Track if the user is at the bottom
+ 
 
   const {
     messages, setMessages,
@@ -111,6 +80,7 @@ const ChatBox: React.FC = () => {
     scrollContainerRef,
     bottomRef,
     containerRef,
+    receiptData,setReceiptData,
     sendMessage, 
   } = useChatFlow();
   
@@ -166,6 +136,10 @@ const ChatBox: React.FC = () => {
   // This function will be passed down to MessageItem
   const handleAction = (action: string) => {
     if (action === 'open_contact_modal') {
+    trackEvent({
+      action: 'open_contact_modal',
+      category: 'Engagement',
+    });
       setShowModal(true);
     }
   };
@@ -238,6 +212,8 @@ const ChatBox: React.FC = () => {
       priceRange: '',
       minPrice: '',
       maxPrice: '',
+      booking_id:'',
+      email:''
     });
     setPriceRange([400, 600]);
     setLatestInsight(null);
@@ -247,10 +223,11 @@ const ChatBox: React.FC = () => {
     setSearchResults([]);
     setShowProperties(false);
     setAwaitingDateConfirmation(null);
+    setReceiptData(null);
 
     // Set resetComplete flag to true to trigger scrolling
     setResetComplete(true);
-
+    
     const Greetings: Message = {
       role: 'assistant',
       type: 'text',
@@ -296,6 +273,12 @@ const ChatBox: React.FC = () => {
     const district = districtOptions.find((d) => d.name === districtName);
     if (!district) return;
 
+    trackEvent({
+      action: 'select_district',
+      category: 'Chat',
+      label: districtName,
+    });
+
     setBookingDetails(prev => ({
       ...prev,
       district: district.name,
@@ -309,213 +292,6 @@ const ChatBox: React.FC = () => {
     );
   };
 
-  // function isChatPropertyArray(data: any): data is ChatProperty[] {
-  //   return (
-  //     Array.isArray(data) &&
-  //     data.every((item) =>
-  //       typeof item.title === 'string' &&
-  //       typeof item.price === 'number' || typeof item.price === 'string' &&
-
-  //       typeof item.rooms === 'number' &&
-  //       Array.isArray(item.amenities) &&
-  //       typeof item.url === 'string' &&
-  //       typeof item.location === 'object' &&
-  //       typeof item.location.district === 'string' &&
-  //       typeof item.location.city === 'string' &&
-  //       typeof item.location.country === 'string'
-  //     )
-  //   );
-  // }
-
-  // function sanitizeAnswer(answer: string): string {
-  //   return answer
-  //     .trim()
-  //     .replace(/^```json/i, '')
-  //     .replace(/^```/, '')
-  //     .replace(/```$/, '')
-  //     .trim();
-  // }
-
-  // const sendMessage = async (content?: string) => {
-  //   const messageText = content ?? input.trim();
-  //   if (!messageText) return;
-  
-  //   const userMsg: Message = { role: 'user', content: messageText };
-  //   setMessages(prev => [...prev, userMsg]);
-  //   setInput('');
-  
-  //   // ✅ Date Confirmation Flow
-  //   if (awaitingDateConfirmation) {
-  //     const answer = messageText.toLowerCase();
-  
-  //     if (answer.includes('yes') || answer.includes('correct')) {
-  //       setBookingDetails(prev => ({
-  //         ...prev,
-  //         dates: awaitingDateConfirmation.proposedDateRange,
-  //         startDate: awaitingDateConfirmation.startDate,
-  //         endDate: awaitingDateConfirmation.endDate,
-  //       }));
-  //       setAwaitingDateConfirmation(null);
-  //       setChatStep('price');
-  
-  //       setIsTyping(true);
-  //       setTimeout(() => {
-  //         setMessages(prev => [
-  //           ...prev,
-  //           {
-  //             role: 'assistant',
-  //             content: 'Thanks for confirming! What is your preferred price range? (e.g. $50–$100)',
-  //           }
-  //         ]);
-  //         setIsTyping(false);
-  //       }, 1000);
-  //     } else {
-  //       setAwaitingDateConfirmation(null);
-  //       setIsTyping(true);
-  //       setTimeout(() => {
-  //         setMessages(prev => [
-  //           ...prev,
-  //           {
-  //             role: 'assistant',
-  //             content: 'No problem. Please select a different date range:',
-  //           }
-  //         ]);
-  //         setIsTyping(false);
-  //       }, 1000);
-  //     }
-  //     return;
-  //   }
-  
-  //   // ✅ Trigger district selection flow
-  //   if (messageText.toLowerCase().includes('properties in lima')) {
-  //     setBookingDetails({
-  //       city: 'Lima',
-  //       district: '',
-  //       districtCoordinates: { lat: 0, lng: 0 },
-  //       dates: '',
-  //       startDate: '',
-  //       endDate: '',
-  //       priceRange: '',
-  //       minPrice: '',
-  //       maxPrice: '',
-  //     });
-  //     setChatStep('district');
-  
-  //     setIsTyping(true);
-  //     setTimeout(() => {
-  //       setMessages(prev => [
-  //         ...prev,
-  //         {
-  //           role: 'assistant',
-  //           content: 'Which district in Lima are you most interested in?',
-  //         }
-  //       ]);
-  //       setIsTyping(false);
-  //     }, 1000);
-  //     return;
-  //   }
-  
-  //   // ✅ Property Insights Flow
-  //   const shouldTriggerInsights = properties && properties.length > 0 && messageText.length > 2;
-  
-  //   if (shouldTriggerInsights) {
-  //     setIsTyping(true);
-  
-  //     try {
-  //       const insightResponse = await getPropertyInsights(messageText, properties);
-  //       const answer = insightResponse?.answer?.trim();
-  
-  //       if (!answer) {
-  //         // Empty string answer
-  //         throw new Error('Empty answer');
-  //       }
-
-  //      // console.error('Answer here :', answer);
-  
-  //       let parsed: any;
-  //       let rendered = false;
-  
-  //       try {
-  //         const sanitized = sanitizeAnswer(answer);
-  //         parsed = JSON.parse(sanitized);
-  //         if (Array.isArray(parsed) && parsed.length === 0) {
-  //           throw new Error('Empty JSON array');
-  //         }
-  //         //console.error('Parsed:', parsed);
-  //         if (isChatPropertyArray(parsed)) {
-  //           setMessages(prev => [
-  //             ...prev,
-  //             {
-  //               role: 'assistant',
-  //               type: 'chatProperties',
-  //               content: '',
-  //               data: parsed,
-  //             }
-  //           ]);
-  //           rendered = true;
-  //         }
-  //         else{
-  //           console.warn('Parsed object did not match ChatProperty[] shape', parsed);
-  //         }
-  //       } catch (err) {
-  //         // Not JSON or bad format; continue to render as plain text
-  //       }
-  
-  //       if (!rendered) {
-  //         setMessages(prev => [
-  //           ...prev,
-  //           {
-  //             role: 'assistant',
-  //             type: 'text',
-  //             content: answer,
-  //           }
-  //         ]);
-  //       }
-  //     } catch (error) {
-  //       console.error('Insight Error:', error);
-  
-  //       // 🔹 Handle empty, invalid, or error gracefully
-  //       setMessages(prev => [
-  //         ...prev,
-  //         {
-  //           role: 'assistant',
-  //           type: 'text',
-  //           content: "We're having trouble finding a clear answer for that. Would you like to speak with a real person?",
-  //         },
-  //         {
-  //           role: 'assistant',
-  //           type: 'action',
-  //           content: 'Request personal assistance',
-  //           data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
-  //         }
-  //       ]);
-  //     } finally {
-  //       setIsTyping(false);
-  //     }
-  //     return;
-  //   }
-  
-  //   // 🧼 Default fallback
-  //   setIsTyping(true);
-  //   setTimeout(() => {
-  //     setMessages(prev => [
-  //       ...prev,
-  //       {
-  //         role: 'assistant',
-  //         type: 'text',
-  //         content: "I'm here to help! Could you please rephrase or clarify your request?",
-  //       },
-  //       {
-  //         role: 'assistant',
-  //         type: 'action',
-  //         content: 'Need help from a real person?',
-  //         data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
-  //       }
-  //     ]);
-  //     setIsTyping(false);
-  //   }, 1000);
-  // };
-  
   const handleQuickResponse = (response: 'yes' | 'no') => {
     sendMessage(response);
   };
@@ -531,7 +307,14 @@ const ChatBox: React.FC = () => {
       endDate: bookingDetails.endDate,      // <-- explicitly include
     };
     
-    console.log('Updated Booking Details:', updatedBookingDetails);
+    //console.log('Updated Booking Details:', updatedBookingDetails);
+
+    trackEvent({
+      action: 'confirm_price_range',
+      category: 'Chat',
+      label: `${pricesRange[0]}-${pricesRange[1]}`,
+      value: pricesRange[1], // optional: max price
+    });
   
     setBookingDetails(updatedBookingDetails);
   
@@ -602,7 +385,16 @@ const ChatBox: React.FC = () => {
         }
   
         addAssistantMessageOnly(`Here are ${response.length} properties based on your criteria:`);
-        console.log(response)
+       // console.log(response)
+
+       // ✅ Track properties shown
+        trackEvent({
+          action: 'show_properties',
+          category: 'Search',
+          label: `${response.length} properties shown`,
+          value: response.length,
+        });
+
         const propertiesMsg: Message = {
           role: 'assistant',
           type: 'properties',
@@ -626,6 +418,13 @@ const ChatBox: React.FC = () => {
       
       } catch (error) {
         console.error('Error fetching properties:', error);
+
+        // ✅ Track the error event in GA
+        trackEvent({
+          action: 'search_error',
+          category: 'Search',
+          label: (error as Error).message || 'Unknown error',
+        });
       
         const errorMessage: Message = {
           role: 'assistant',
@@ -700,7 +499,11 @@ const ChatBox: React.FC = () => {
   };
 
   const handleSuggestedQuestion = async (question: string) => {
-
+     trackEvent({
+      action: 'select_suggested_question',
+      category: 'Chat',
+      label: question,
+    });
     // ✅ Check for "General Information"
   if (question.toLowerCase() === 'general information') {
     setMessages(prev => [
@@ -713,9 +516,26 @@ const ChatBox: React.FC = () => {
       },
     ]);
 
+   
+
     setChatStep('faqIntro'); // Used to trigger FAQ follow-ups in JSX
     return; // ✅ Exit early — skip the rest of this function
   }
+
+  if (question.toLowerCase().includes('receipt')) {
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', type: 'text', content: question },
+      {
+        role: 'assistant',
+        type: 'text',
+        content: 'Sure! Please enter your Booking ID.',
+      },
+    ]);
+    setChatStep('receipt_booking_id'); // 👈 first substep
+    return;
+  }
+  
     setChatStep('propertyInsights');
     setIsTyping(true);
   
@@ -918,6 +738,8 @@ const ChatBox: React.FC = () => {
           </button>
         </div>
       )}
+
+      
 
       <div className="flex mt-4">
         <input

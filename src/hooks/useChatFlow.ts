@@ -6,6 +6,9 @@ import { PropertyModel } from '../types/property';
 import { getPropertyInsights } from '../services/aiService';
 import { getFAQAnswer } from '../services/faqsService';
 import { isChatPropertyArray, sanitizeAnswer } from '../utils/chatUtils';
+import { getReceipt } from '../services/receiptService';
+import ReceiptCard from '../components/ReceiptCard'; // or wherever it's imported
+import { ReceiptModel } from '../types/receipt';
 
 export function useChatFlow() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -21,6 +24,8 @@ export function useChatFlow() {
     priceRange: '',
     minPrice: '',
     maxPrice: '',
+    booking_id: '', // ✅ add this
+    email: '',       // ✅ and this
   });
   const [pricesRange, setPriceRange] = useState<[number, number]>([400, 600]);
   const [latestInsight, setLatestInsight] = useState<string | null>(null);
@@ -43,6 +48,7 @@ export function useChatFlow() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [receiptData, setReceiptData] = useState<ReceiptModel | null>(null);
 
 
    const sendMessage = async (content?: string) => {
@@ -107,6 +113,8 @@ export function useChatFlow() {
           priceRange: '',
           minPrice: '',
           maxPrice: '',
+          booking_id:'',
+          email:'',
         });
         setChatStep('district');
     
@@ -123,6 +131,103 @@ export function useChatFlow() {
         }, 1000);
         return;
       }
+
+      if (chatStep === 'receipt_booking_id') {
+        setIsTyping(true);
+      
+        setBookingDetails(prev => ({
+          ...prev,
+          booking_id: input.trim(),
+        }));
+      
+        setMessages(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: 'Thanks! Now enter the email used for the booking.',
+          },
+        ]);
+      
+        setInput('');
+        setChatStep('receipt_email');
+        setIsTyping(false); // ✅ stop typing after assistant message is shown
+        return;
+      }
+      
+      
+      if (chatStep === 'receipt_email') {
+        const emailInput = input.trim();
+        setIsTyping(true);
+        setBookingDetails(prev => ({
+          ...prev,
+          email: emailInput,
+        }));
+      
+        setInput('');
+        setChatStep('moreInfo');
+      
+        try {
+          const receipt = await getReceipt(bookingDetails.booking_id, emailInput);
+      
+          if (!receipt) {
+            setMessages(prev => [
+              ...prev,
+              {
+                role: 'assistant',
+                type: 'text',
+                content: "Sorry, we couldn't find a receipt with that information. Would you like help from our support team?",
+              },
+              {
+                role: 'assistant',
+                type: 'action',
+                content: 'Request personal assistance here:',
+                data: [{ label: 'Contact Support', action: 'open_contact_modal' }],
+              },
+            ]);
+            setIsTyping(false);
+            return;
+          }
+          
+      
+          setMessages(prev => [
+            ...prev,
+            {
+              role: 'assistant',
+              content: 'Generating your receipt...',
+            },
+          ]);
+      
+          //setReceiptData(receipt);
+
+          setMessages(prev => [
+            ...prev,
+            {
+              role: 'assistant',
+              type: 'receipt',
+              content: '', // not needed here
+              data: receipt, // full ReceiptModel object
+            },
+          ]);
+          
+          console.log(receipt);
+        } catch (err) {
+          console.error(err);
+          setMessages(prev => [
+            ...prev,
+            {
+              role: 'assistant',
+              content: 'An error occurred while retrieving the receipt.',
+            },
+          ]);
+        } finally {
+          setIsTyping(false); // ✅ always clear typing
+        }
+      
+        return;
+      }
+      
+      
+      
 
       // ✅ Handle moreInfo FAQ flow
       if (chatStep === 'moreInfo') {
@@ -299,7 +404,7 @@ export function useChatFlow() {
     scrollContainerRef,
     bottomRef,
     containerRef,
-
+    receiptData, setReceiptData,
     sendMessage, 
   };
 }

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { submitContactForm } from "../services/contactService";
+import { event as trackEvent } from '../utils/ga';
+
 
 const ContactForm = ({ onClose }: { onClose?: () => void }) => {
   const [formData, setFormData] = useState({
@@ -32,6 +34,11 @@ const ContactForm = ({ onClose }: { onClose?: () => void }) => {
     if (!isValidWhatsAppNumber(formData.whatsapp)) {
       setStatusType("error");
       setStatusMessage("Please enter a valid WhatsApp number (e.g. +1234567890).");
+      trackEvent({
+        action: 'invalid_whatsapp',
+        category: 'Validation',
+        label: formData.whatsapp,
+      });
       return;
     }
 
@@ -44,10 +51,20 @@ const ContactForm = ({ onClose }: { onClose?: () => void }) => {
       if (onClose) {
         setTimeout(() => onClose(), 2000); // auto-close after 2s if modal
       }
+      trackEvent({
+        action: 'submit_contact_form',
+        category: 'Contact',
+        label: formData.email,
+      });
     } catch (error: any) {
       console.error("Error submitting contact form:", error);
       setStatusType("error");
       setStatusMessage(error.message || "Something went wrong.");
+       trackEvent({
+        action: 'submit_contact_form_failed',
+        category: 'Contact',
+        label: error.message || 'Unknown error',
+      });
     } finally {
       setLoading(false);
     }
