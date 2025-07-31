@@ -358,8 +358,8 @@ const ChatBox: React.FC = () => {
             data: [
               'Try a different district',
               'Increase your max price',
-              'Change your dates to include weekdays',
-              'Search all of the city instead of a specific area',
+              //'Change your dates to include weekdays',
+              //'Search all of the city instead of a specific area',
             ],
           };
           

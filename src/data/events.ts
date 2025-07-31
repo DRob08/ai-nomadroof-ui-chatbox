@@ -10,7 +10,7 @@ const events: EventItem[] = [
     date: "August 12, 2025",
     title: "Meet-up Night and Salsa Night",
     desc: "Because some students will already be in Lima, we're kicking off Semester 2025-02 with our first meet-up in one of our houses. More info in our WhatsApp group!",
-    image: "/images/community/nomadroof-events-language-exchange.jpg",
+    image: "/images/community/nomadroof-events-meet-up-nomadroof.jpg",
   },
   {
     date: "August 19, 2025",
@@ -22,7 +22,7 @@ const events: EventItem[] = [
     date: "August 27-31, 2025",
     title: "Huaraz Integration Trip",
     desc: "Trek through big mountains, turquoise lagoons, and beautiful landscapes in Huaraz. Discover its culture and connect with fellow exchange students in nature!",
-    image: "/images/community/nomadroof-events-hiking-trip.JPG",
+    image: "/images/community/nomadroof-events-huaraz.jpg",
   },
 ];
 

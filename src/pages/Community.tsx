@@ -18,6 +18,14 @@ const Community = () => {
     { src: "/images/community/nomadroof-events-6.png" },
     { src: "/images/community/nomadroof-events-7.png" },
     { src: "/images/community/nomadroof-events-8.png" },
+    { src: "/images/community/nomadroof-events-9.png" },
+    { src: "/images/community/nomadroof-events-10.png" },
+    { src: "/images/community/nomadroof-events-11.png" },
+    { src: "/images/community/nomadroof-events-12.png" },
+    { src: "/images/community/nomadroof-events-14.png" },
+    { src: "/images/community/nomadroof-events-15.png" },
+    { src: "/images/community/nomadroof-events-16.png" },
+    { src: "/images/community/nomadroof-events-17.png" },
   ];
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
