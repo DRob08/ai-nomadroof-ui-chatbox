@@ -92,7 +92,7 @@ const Community = () => {
           Welcome to Our Student Community
         </h1>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          We host exchange students across Latin America, creating a vibrant network of nomadic learners who share experiences, make memories, and support each other every step of the way.
+          We host exchange students in Peru, creating a vibrant network of nomadic learners who share experiences, make memories, and support each other every step of the way.
         </p>
       </section>
 
